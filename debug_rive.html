@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WFL Rive Debugger</title>
+    <script src="https://unpkg.com/@rive-app/canvas@2.21.0/rive.js"></script>
+    <style>
+        body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+        h1 { color: #569cd6; }
+        h2 { color: #4ec9b0; margin-top: 20px; }
+        .found { color: #4fc356; }
+        .input { color: #dcdcaa; margin-left: 20px; }
+        .error { color: #f44747; }
+        #output { white-space: pre-wrap; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+    <h1>WFL Rive File Debugger</h1>
+    <p>Drag and drop a .riv file or use the file picker:</p>
+    <input type="file" id="fileInput" accept=".riv">
+    <canvas id="canvas" width="100" height="100"></canvas>
+    <div id="output">Waiting for file...</div>
+
+    <script>
+        const output = document.getElementById('output');
+        const fileInput = document.getElementById('fileInput');
+        const canvas = document.getElementById('canvas');
+
+        function log(text, className = '') {
+            const span = document.createElement('span');
+            span.className = className;
+            span.textContent = text + '\n';
+            output.appendChild(span);
+        }
+
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+
+        async function debugRiveFile(arrayBuffer) {
+            clearOutput();
+            log('=== RIVE FILE DEBUG ===\n');
+
+            try {
+                // Use the high-level Rive API to inspect the file
+                const r = new rive.Rive({
+                    buffer: arrayBuffer,
+                    canvas: canvas,
+                    autoplay: false,
+                    onLoad: () => {
+                        log(`File loaded successfully!`);
+                        log(`Artboard: ${r.artboardName || 'default'}`);
+
+                        // Get state machine names
+                        const smNames = r.stateMachineNames;
+                        log(`\nState Machines (${smNames.length}):`, 'found');
+                        smNames.forEach((name, i) => {
+                            log(`  [${i}] ${name}`, 'found');
+                        });
+
+                        // Get animation names
+                        const animNames = r.animationNames;
+                        log(`\nAnimations (${animNames.length}):`);
+                        animNames.forEach((name, i) => {
+                            log(`  [${i}] ${name}`);
+                        });
+
+                        // Try to get inputs from the first state machine
+                        if (smNames.length > 0) {
+                            log(`\n=== STATE MACHINE INPUTS ===\n`);
+                            smNames.forEach(smName => {
+                                log(`Inputs for "${smName}":`, 'found');
+                                const inputs = r.stateMachineInputs(smName);
+                                if (inputs && inputs.length > 0) {
+                                    inputs.forEach(inp => {
+                                        const typeName = inp.type === rive.StateMachineInputType.Boolean ? 'bool' :
+                                                        inp.type === rive.StateMachineInputType.Number ? 'number' :
+                                                        inp.type === rive.StateMachineInputType.Trigger ? 'trigger' : `type:${inp.type}`;
+                                        log(`  - ${inp.name} (${typeName})`, 'input');
+                                    });
+                                } else {
+                                    log(`  (no inputs found)`, 'error');
+                                }
+                            });
+                        }
+
+                        log('\n=== DONE ===');
+                    },
+                    onLoadError: (e) => {
+                        log(`Load error: ${e}`, 'error');
+                    }
+                });
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+                console.error(e);
+            }
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const buffer = await file.arrayBuffer();
+                debugRiveFile(buffer);
+            }
+        });
+
+        // Drag and drop support
+        document.body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        document.body.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const buffer = await file.arrayBuffer();
+                debugRiveFile(buffer);
+            }
+        });
+
+        // Auto-load if wfl.riv exists in same directory
+        fetch('assets/wfl.riv')
+            .then(r => r.ok ? r.arrayBuffer() : Promise.reject())
+            .then(buffer => debugRiveFile(buffer))
+            .catch(() => log('Drop a .riv file to analyze it.'));
+    </script>
+</body>
+</html>
