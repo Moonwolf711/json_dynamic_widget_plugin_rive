@@ -3226,28 +3226,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
             ..translate(sway, breathY + headBob)
             ..rotateZ(lean * 0.01),
           alignment: Alignment.bottomCenter,
-          child: _buildCharacterStack(
-            name: name,
-            config: config,
-            blinkState: blinkState,
-            eyeX: eyeX,
-            eyeY: eyeY,
-            headBob: headBob,
-            bodyScale: bodyScale,
-            bodyOffset: bodyOffset,
-            eyesScale: eyesScale,
-            eyesOffset: eyesOffset,
-            mouthScale: mouthScale,
-            mouthOffset: mouthOffset,
-            baseLeft: baseLeft,
-            baseRight: baseRight,
-            baseBottom: baseBottom,
-            bodyColor: bodyColor,
-            eyesColor: eyesColor,
-            mouthColor: mouthColor,
-            body: body,
-            mouth: mouth,
-          ),
+          child: _buildCharacter(name, body, mouth), // Use bone animation if available!
         );
       },
     );
@@ -3625,15 +3604,18 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
     // Priority 1: Rive bone animation (if .riv file has valid artboards)
     if (_riveLoaded && artboard != null) {
+      debugPrint('📊 Rendering $name with RIVE');
       return _buildRiveCharacter(name, artboard);
     }
 
     // Priority 2: Custom bone animation system (if skeletons loaded)
     if (_skeletonsLoaded && skeleton != null) {
+      debugPrint('🦴 Rendering $name with BONE ANIMATION (showBones will be true)');
       return _buildBoneCharacter(name, skeleton);
     }
 
     // Priority 3: PNG layer fallback
+    debugPrint('🖼️ Rendering $name with PNG FALLBACK');
     return _buildPngCharacter(name, body, mouth);
   }
 

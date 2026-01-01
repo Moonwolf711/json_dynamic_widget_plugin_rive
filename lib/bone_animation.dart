@@ -452,6 +452,11 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Debug: verify showBones parameter
+    if (widget.showBones) {
+      debugPrint('🔴 BoneAnimator: showBones=true, rendering debug overlay');
+    }
+
     return SizedBox(
       width: widget.skeleton.canvasSize.width * widget.scale,
       height: widget.skeleton.canvasSize.height * widget.scale,
@@ -461,6 +466,21 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
           // Render bones recursively from root
           if (widget.skeleton.rootBone != null)
             _buildBoneTree(widget.skeleton.rootBone!, Offset.zero, 0),
+
+          // Debug: Add bright overlay indicator
+          if (widget.showBones)
+            Positioned(
+              top: 0,
+              left: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                color: Colors.red,
+                child: const Text(
+                  'BONES',
+                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -507,7 +527,7 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
           ),
 
         // Debug: show bone
-        if (widget.showBones)
+        if (widget.showBones) ...[
           Positioned(
             left: worldPos.dx * widget.scale,
             top: worldPos.dy * widget.scale,
@@ -516,14 +536,29 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
               alignment: Alignment.topLeft,
               child: Container(
                 width: bone.length * widget.scale,
-                height: 4,
+                height: 6, // Slightly thicker
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(2),
+                  color: Colors.red.withOpacity(1.0), // Fully opaque
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),
           ),
+          // Add a bright circle at bone position
+          Positioned(
+            left: worldPos.dx * widget.scale - 5,
+            top: worldPos.dy * widget.scale - 5,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: Colors.yellow,
+                border: Border.all(color: Colors.black, width: 2),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
 
         // Render children
         for (final child in children)
