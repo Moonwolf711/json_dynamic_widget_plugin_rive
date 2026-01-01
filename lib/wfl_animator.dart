@@ -3665,7 +3665,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         currentAnimation: animation,
         assetBasePath: basePath,
         scale: 0.6,
-        showBones: false, // Set to true for debugging
+        showBones: true, // Debug: visualize bone structure
       ),
     );
   }

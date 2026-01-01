@@ -2,6 +2,7 @@
 /// Custom skeletal animation for PNG layers without external tools
 library bone_animation;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -308,6 +309,11 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
   // Dynamic image overrides for mouth shapes and eye states
   final Map<String, List<String>> _imageOverrides = {};
 
+  // Automatic blinking
+  Timer? _blinkTimer;
+  final _random = math.Random();
+  bool _enableAutoBlinking = true;
+
   @override
   void initState() {
     super.initState();
@@ -319,6 +325,11 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
 
     if (widget.currentAnimation != null) {
       playAnimation(widget.currentAnimation!);
+    }
+
+    // Start automatic blinking if skeleton has blink animation
+    if (widget.skeleton.animations.containsKey('blink')) {
+      _scheduleNextBlink();
     }
   }
 
@@ -372,6 +383,54 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
     });
   }
 
+  /// Enable or disable automatic blinking
+  void setAutoBlinking(bool enabled) {
+    _enableAutoBlinking = enabled;
+    if (enabled && _blinkTimer == null) {
+      _scheduleNextBlink();
+    } else if (!enabled) {
+      _blinkTimer?.cancel();
+      _blinkTimer = null;
+    }
+  }
+
+  /// Schedule next blink at random interval (3-8 seconds)
+  void _scheduleNextBlink() {
+    if (!_enableAutoBlinking) return;
+
+    _blinkTimer?.cancel();
+    final delay = Duration(
+      milliseconds: 3000 + _random.nextInt(5000), // 3-8 seconds
+    );
+
+    _blinkTimer = Timer(delay, () {
+      _triggerBlink();
+      _scheduleNextBlink(); // Schedule next blink
+    });
+  }
+
+  /// Trigger a single blink animation
+  void _triggerBlink() {
+    final blinkAnim = widget.skeleton.animations['blink'];
+    if (blinkAnim == null) return;
+
+    // Temporarily play blink animation
+    // Note: This is a simplified approach. For production, you'd want
+    // to blend animations or use an animation layer system.
+    final previousAnim = _currentAnimName;
+    playAnimation('blink');
+
+    // Return to previous animation after blink completes
+    Future.delayed(
+      Duration(milliseconds: (blinkAnim.duration * 1000).round()),
+      () {
+        if (previousAnim != null && mounted) {
+          playAnimation(previousAnim);
+        }
+      },
+    );
+  }
+
   void _updateAnimation() {
     if (_currentAnimName == null) return;
 
@@ -387,6 +446,7 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
   @override
   void dispose() {
     _controller.dispose();
+    _blinkTimer?.cancel();
     super.dispose();
   }
 
