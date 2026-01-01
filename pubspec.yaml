@@ -1,0 +1,78 @@
+name: wfl_viewer
+description: WFL Animation Viewer - Rive + Auto-Roast Pipeline
+publish_to: 'none'
+version: 3.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Rive animation (0.13+ for Data Binding API)
+  rive: ^0.13.20
+
+  # HTTP for API calls
+  http: ^1.1.0
+
+  # Audio playback
+  audioplayers: ^5.2.0
+
+  # Simple animations for organic character motion
+  simple_animations: ^5.0.2
+
+  # Video player for portholes
+  video_player: ^2.8.0
+
+  # FFmpeg for video export
+  ffmpeg_kit_flutter: ^6.0.0
+
+  # File picking
+  file_picker: ^6.1.1
+
+  # Path utilities
+  path_provider: ^2.1.0
+
+  # YouTube upload
+  googleapis: ^13.0.0
+  googleapis_auth: ^2.0.0
+  google_sign_in: ^6.2.0
+
+  # Share sheet for TikTok/Reels/Shorts
+  share_plus: ^7.2.0
+  url_launcher: ^6.3.2
+
+  # Live mic recording (disabled for Windows build)
+  # record: ^5.0.0
+  # permission_handler: ^11.0.0
+  url_launcher_windows: ^3.1.4
+
+  # WebSocket for server control
+  web_socket_channel: ^2.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/wfl.riv  # compiled export from Rive (.rivo is source, .riv is binary)
+    - assets/path_effects/  # Custom Lua path effects
+    - assets/backgrounds/
+    - assets/characters/
+    - assets/characters/nigel/
+    - assets/characters/nigel/layers/
+    - assets/characters/nigel/mouth_shapes/
+    - assets/characters/nigel/eyes/
+    - assets/characters/terry/
+    - assets/characters/terry/layers/
+    - assets/characters/terry/mouth_shapes/
+    - assets/characters/terry/terry sitting transp/
+    - assets/characters/nigel/nigel transparent/
+    - assets/audio/
+    - assets/sfx/  # Comedy sound effects for Show Mode
+    - assets/sfx/background/  # Background music tracks
