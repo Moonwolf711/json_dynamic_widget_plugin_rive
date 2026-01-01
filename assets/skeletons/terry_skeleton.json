@@ -50,6 +50,14 @@
       "images": ["layers/layer_08.png", "layers/layer_09.png", "layers/layer_10.png"]
     },
     {
+      "name": "eyes",
+      "parent": "head",
+      "position": { "x": 0, "y": -15 },
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "length": 10,
+      "images": []
+    },
+    {
       "name": "jaw",
       "parent": "head",
       "position": { "x": 0, "y": 30 },
@@ -194,6 +202,24 @@
             "left_arm": { "rotation": 0.1 },
             "right_arm": { "rotation": -0.15 }
           }
+        }
+      ]
+    },
+    "blink": {
+      "duration": 0.2,
+      "loop": false,
+      "keyframes": [
+        {
+          "time": 0.0,
+          "transforms": {}
+        },
+        {
+          "time": 0.1,
+          "transforms": {}
+        },
+        {
+          "time": 0.2,
+          "transforms": {}
         }
       ]
     },

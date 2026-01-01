@@ -975,17 +975,27 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
   /// Set mouth shape using Data Binding or legacy sprites
   void _setMouth(String character, String phoneme) {
+    final mouthShape = phoneme.toLowerCase();
+
     if (character == 'terry') {
       if (_terryController?.hasDataBinding == true) {
         _terryController!.setMouthFromPhoneme(phoneme);
       } else {
-        setState(() => _terryMouth = phoneme.toLowerCase());
+        setState(() => _terryMouth = mouthShape);
+      }
+      // Also update bone animator mouth
+      if (_skeletonsLoaded) {
+        _terryBoneKey.currentState?.setMouthShape(mouthShape);
       }
     } else if (character == 'nigel') {
       if (_nigelController?.hasDataBinding == true) {
         _nigelController!.setMouthFromPhoneme(phoneme);
       } else {
-        setState(() => _nigelMouth = phoneme.toLowerCase());
+        setState(() => _nigelMouth = mouthShape);
+      }
+      // Also update bone animator mouth
+      if (_skeletonsLoaded) {
+        _nigelBoneKey.currentState?.setMouthShape(mouthShape);
       }
     }
   }

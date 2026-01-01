@@ -305,6 +305,9 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
   Map<String, BoneTransform> _currentTransforms = {};
   String? _currentAnimName;
 
+  // Dynamic image overrides for mouth shapes and eye states
+  final Map<String, List<String>> _imageOverrides = {};
+
   @override
   void initState() {
     super.initState();
@@ -346,6 +349,27 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
 
   void stopAnimation() {
     _controller.stop();
+  }
+
+  /// Set mouth shape for lip-sync (e.g., 'a', 'e', 'o', 'x')
+  void setMouthShape(String shape) {
+    setState(() {
+      _imageOverrides['mouth'] = ['mouth_shapes/$shape.png'];
+    });
+  }
+
+  /// Set eye state for blinking (e.g., 'open', 'half', 'closed')
+  void setEyeState(String state) {
+    setState(() {
+      _imageOverrides['eyes'] = ['eyes/eyes_$state.png'];
+    });
+  }
+
+  /// Clear all image overrides
+  void clearOverrides() {
+    setState(() {
+      _imageOverrides.clear();
+    });
   }
 
   void _updateAnimation() {
@@ -399,8 +423,8 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // Render attached images
-        for (final imagePath in bone.attachedImages)
+        // Render attached images (use overrides if available)
+        for (final imagePath in (_imageOverrides[bone.name] ?? bone.attachedImages))
           Positioned(
             left: worldPos.dx * widget.scale,
             top: worldPos.dy * widget.scale,

@@ -205,6 +205,24 @@
         }
       ]
     },
+    "blink": {
+      "duration": 0.2,
+      "loop": false,
+      "keyframes": [
+        {
+          "time": 0.0,
+          "transforms": {}
+        },
+        {
+          "time": 0.1,
+          "transforms": {}
+        },
+        {
+          "time": 0.2,
+          "transforms": {}
+        }
+      ]
+    },
     "skeptical": {
       "duration": 2.0,
       "loop": true,
