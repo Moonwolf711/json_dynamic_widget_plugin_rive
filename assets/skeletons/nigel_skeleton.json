@@ -1,0 +1,283 @@
+{
+  "name": "nigel",
+  "canvasSize": { "width": 512, "height": 768 },
+  "bones": [
+    {
+      "name": "root",
+      "position": { "x": 256, "y": 620 },
+      "pivot": { "x": 0.5, "y": 1.0 },
+      "length": 50,
+      "images": []
+    },
+    {
+      "name": "hips",
+      "parent": "root",
+      "position": { "x": 0, "y": -40 },
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "length": 35,
+      "images": ["layers/layer_01_body.png"]
+    },
+    {
+      "name": "spine",
+      "parent": "hips",
+      "position": { "x": 0, "y": -50 },
+      "pivot": { "x": 0.5, "y": 1.0 },
+      "length": 55,
+      "images": ["layers/layer_02.png", "layers/layer_03.png"]
+    },
+    {
+      "name": "chest",
+      "parent": "spine",
+      "position": { "x": 0, "y": -60 },
+      "pivot": { "x": 0.5, "y": 1.0 },
+      "length": 45,
+      "images": ["layers/layer_04.png", "layers/layer_05.png"]
+    },
+    {
+      "name": "neck",
+      "parent": "chest",
+      "position": { "x": 0, "y": -25 },
+      "pivot": { "x": 0.5, "y": 1.0 },
+      "length": 18,
+      "images": ["layers/layer_06.png"]
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "position": { "x": 0, "y": -70 },
+      "pivot": { "x": 0.5, "y": 0.8 },
+      "length": 55,
+      "images": ["layers/layer_07.png", "layers/layer_08.png"]
+    },
+    {
+      "name": "eyes",
+      "parent": "head",
+      "position": { "x": 0, "y": -20 },
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "length": 10,
+      "images": ["eyes/eyes_open.png"]
+    },
+    {
+      "name": "jaw",
+      "parent": "head",
+      "position": { "x": 0, "y": 25 },
+      "pivot": { "x": 0.5, "y": 0.0 },
+      "length": 18,
+      "images": []
+    },
+    {
+      "name": "mouth",
+      "parent": "jaw",
+      "position": { "x": 0, "y": 8 },
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "length": 10,
+      "images": ["mouth_shapes/x.png"]
+    },
+    {
+      "name": "left_shoulder",
+      "parent": "chest",
+      "position": { "x": -50, "y": -15 },
+      "pivot": { "x": 1.0, "y": 0.5 },
+      "length": 25,
+      "images": ["layers/layer_09.png"]
+    },
+    {
+      "name": "left_arm",
+      "parent": "left_shoulder",
+      "position": { "x": -25, "y": 8 },
+      "pivot": { "x": 1.0, "y": 0.2 },
+      "length": 45,
+      "images": ["layers/layer_10.png", "layers/layer_11.png"]
+    },
+    {
+      "name": "left_hand",
+      "parent": "left_arm",
+      "position": { "x": -15, "y": 45 },
+      "pivot": { "x": 0.5, "y": 0.0 },
+      "length": 22,
+      "images": ["layers/layer_12.png"]
+    },
+    {
+      "name": "right_shoulder",
+      "parent": "chest",
+      "position": { "x": 50, "y": -15 },
+      "pivot": { "x": 0.0, "y": 0.5 },
+      "length": 25,
+      "images": ["layers/layer_13.png"]
+    },
+    {
+      "name": "right_arm",
+      "parent": "right_shoulder",
+      "position": { "x": 25, "y": 8 },
+      "pivot": { "x": 0.0, "y": 0.2 },
+      "length": 45,
+      "images": ["layers/layer_14.png"]
+    },
+    {
+      "name": "right_hand",
+      "parent": "right_arm",
+      "position": { "x": 15, "y": 45 },
+      "pivot": { "x": 0.5, "y": 0.0 },
+      "length": 22,
+      "images": ["layers/layer_15.png"]
+    }
+  ],
+  "animations": {
+    "idle": {
+      "duration": 4.0,
+      "loop": true,
+      "keyframes": [
+        {
+          "time": 0.0,
+          "transforms": {
+            "spine": { "rotation": 0.0 },
+            "chest": { "rotation": -0.02 },
+            "head": { "rotation": 0.02 },
+            "left_arm": { "rotation": 0.03 },
+            "right_arm": { "rotation": -0.03 }
+          }
+        },
+        {
+          "time": 2.0,
+          "transforms": {
+            "spine": { "rotation": 0.01 },
+            "chest": { "rotation": 0.02 },
+            "head": { "rotation": -0.02 },
+            "left_arm": { "rotation": -0.03 },
+            "right_arm": { "rotation": 0.03 }
+          }
+        },
+        {
+          "time": 4.0,
+          "transforms": {
+            "spine": { "rotation": 0.0 },
+            "chest": { "rotation": -0.02 },
+            "head": { "rotation": 0.02 },
+            "left_arm": { "rotation": 0.03 },
+            "right_arm": { "rotation": -0.03 }
+          }
+        }
+      ]
+    },
+    "talking": {
+      "duration": 0.6,
+      "loop": true,
+      "keyframes": [
+        {
+          "time": 0.0,
+          "transforms": {
+            "head": { "rotation": 0.0 },
+            "jaw": { "rotation": 0.0 },
+            "chest": { "rotation": 0.0 },
+            "left_arm": { "rotation": 0.02 },
+            "right_arm": { "rotation": -0.02 }
+          }
+        },
+        {
+          "time": 0.2,
+          "transforms": {
+            "head": { "rotation": -0.02 },
+            "jaw": { "rotation": 0.06 },
+            "chest": { "rotation": 0.01 },
+            "left_arm": { "rotation": 0.05 },
+            "right_arm": { "rotation": 0.0 }
+          }
+        },
+        {
+          "time": 0.4,
+          "transforms": {
+            "head": { "rotation": 0.02 },
+            "jaw": { "rotation": 0.0 },
+            "chest": { "rotation": -0.01 },
+            "left_arm": { "rotation": 0.0 },
+            "right_arm": { "rotation": -0.05 }
+          }
+        },
+        {
+          "time": 0.6,
+          "transforms": {
+            "head": { "rotation": 0.0 },
+            "jaw": { "rotation": 0.0 },
+            "chest": { "rotation": 0.0 },
+            "left_arm": { "rotation": 0.02 },
+            "right_arm": { "rotation": -0.02 }
+          }
+        }
+      ]
+    },
+    "skeptical": {
+      "duration": 2.0,
+      "loop": true,
+      "keyframes": [
+        {
+          "time": 0.0,
+          "transforms": {
+            "head": { "rotation": 0.05 },
+            "chest": { "rotation": -0.03 },
+            "left_arm": { "rotation": 0.15 },
+            "right_arm": { "rotation": -0.1 }
+          }
+        },
+        {
+          "time": 1.0,
+          "transforms": {
+            "head": { "rotation": 0.08 },
+            "chest": { "rotation": -0.02 },
+            "left_arm": { "rotation": 0.12 },
+            "right_arm": { "rotation": -0.15 }
+          }
+        },
+        {
+          "time": 2.0,
+          "transforms": {
+            "head": { "rotation": 0.05 },
+            "chest": { "rotation": -0.03 },
+            "left_arm": { "rotation": 0.15 },
+            "right_arm": { "rotation": -0.1 }
+          }
+        }
+      ]
+    },
+    "eyeroll": {
+      "duration": 1.2,
+      "loop": false,
+      "keyframes": [
+        {
+          "time": 0.0,
+          "transforms": {
+            "head": { "rotation": 0.0 },
+            "eyes": { "position": { "x": 0, "y": 0 } }
+          }
+        },
+        {
+          "time": 0.3,
+          "transforms": {
+            "head": { "rotation": 0.08 },
+            "eyes": { "position": { "x": 0, "y": -5 } }
+          }
+        },
+        {
+          "time": 0.6,
+          "transforms": {
+            "head": { "rotation": 0.1 },
+            "eyes": { "position": { "x": 0, "y": -8 } }
+          }
+        },
+        {
+          "time": 0.9,
+          "transforms": {
+            "head": { "rotation": 0.05 },
+            "eyes": { "position": { "x": 0, "y": -3 } }
+          }
+        },
+        {
+          "time": 1.2,
+          "transforms": {
+            "head": { "rotation": 0.0 },
+            "eyes": { "position": { "x": 0, "y": 0 } }
+          }
+        }
+      ]
+    }
+  }
+}

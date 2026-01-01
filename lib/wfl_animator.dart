@@ -9,7 +9,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:simple_animations/simple_animations.dart';
 import 'package:video_player/video_player.dart';
 // file_picker removed - using drag-and-drop instead
-import 'package:rive/rive.dart' hide LinearGradient, Image;
+// RIVE DISABLED: Using custom bone animation to avoid Windows path length issues
+// import 'package:rive/rive.dart' hide LinearGradient, Image;
+import 'rive_stub.dart'; // Stub classes when Rive is disabled
 import 'package:path_provider/path_provider.dart';
 // Stubbed for Windows build - mic recording not supported
 import 'record_stub.dart';
@@ -22,6 +24,7 @@ import 'wfl_websocket.dart';
 import 'wfl_image_resizer.dart';
 import 'wfl_animations.dart';
 import 'sound_effects.dart';
+import 'bone_animation.dart';
 
 /// Rive input names - enum prevents typos that freeze the mouth forever
 /// (Legacy - kept for backwards compatibility with old .riv files)
@@ -59,6 +62,15 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   StateMachineController? _nigelStateMachine;
   bool _riveLoaded = false;
 
+  // Custom bone animation - alternative to Rive
+  Skeleton? _terrySkeleton;
+  Skeleton? _nigelSkeleton;
+  bool _skeletonsLoaded = false;
+  String _terryAnimation = 'idle';
+  String _nigelAnimation = 'idle';
+  final GlobalKey<BoneAnimatorWidgetState> _terryBoneKey = GlobalKey();
+  final GlobalKey<BoneAnimatorWidgetState> _nigelBoneKey = GlobalKey();
+
   // Audio player for voice lines
   final AudioPlayer _voicePlayer = AudioPlayer();
 
@@ -83,7 +95,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   // Rive controller for cockpit (legacy)
   StateMachineController? _riveController;
   SMINumber? _buttonState;
-  SMIInput<String>? _btnTarget;
+  // Note: String inputs don't exist in Rive state machines - removed _btnTarget
   SMIBool? _isTalking;
 
   // Data Binding controllers (new API)
@@ -370,6 +382,9 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     // Load Rive bone animations for characters
     _loadRiveAnimations();
 
+    // Also load custom skeletons (fallback when Rive doesn't work)
+    _loadSkeletons();
+
     // Start background music on app open (dating show vibe!)
     SoundEffects().startBackgroundMusic();
 
@@ -401,7 +416,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       Artboard? mainArtboard;
       try {
         mainArtboard = file.mainArtboard;
-        debugPrint('Rive file loaded. Main artboard: ${mainArtboard.name}');
+        debugPrint('Rive file loaded. Main artboard: ${mainArtboard?.name}');
       } catch (e) {
         debugPrint('Rive file has no main artboard: $e');
         // File loaded but no usable artboards - fall back to PNG
@@ -488,6 +503,39 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       debugPrint('Stack: $stack');
       // Keep using PNG images as fallback
     }
+  }
+
+  /// Load custom bone animation skeletons from JSON
+  Future<void> _loadSkeletons() async {
+    try {
+      // Load Terry skeleton
+      _terrySkeleton = await loadSkeleton('assets/skeletons/terry_skeleton.json');
+      debugPrint('Terry skeleton loaded: ${_terrySkeleton!.bones.length} bones, ${_terrySkeleton!.animations.length} animations');
+
+      // Load Nigel skeleton
+      _nigelSkeleton = await loadSkeleton('assets/skeletons/nigel_skeleton.json');
+      debugPrint('Nigel skeleton loaded: ${_nigelSkeleton!.bones.length} bones, ${_nigelSkeleton!.animations.length} animations');
+
+      setState(() => _skeletonsLoaded = true);
+      debugPrint('Custom bone animation skeletons loaded successfully');
+    } catch (e, stack) {
+      debugPrint('Skeleton loading failed: $e');
+      debugPrint('Stack: $stack');
+      // PNG fallback still works
+    }
+  }
+
+  /// Set character animation for bone system
+  void _setBoneAnimation(String character, String animation) {
+    setState(() {
+      if (character == 'terry') {
+        _terryAnimation = animation;
+        _terryBoneKey.currentState?.playAnimation(animation);
+      } else {
+        _nigelAnimation = animation;
+        _nigelBoneKey.currentState?.playAnimation(animation);
+      }
+    });
   }
 
   /// Handle commands from WFL server
@@ -734,9 +782,9 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     _audioRecorder.dispose();
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
-    // Dispose Rive resources
-    _terryStateMachine?.dispose();
-    _nigelStateMachine?.dispose();
+    // Dispose Rive resources (StateMachineController doesn't have dispose in Rive 0.13.x)
+    _terryStateMachine = null;
+    _nigelStateMachine = null;
     _terryController?.dispose();
     _nigelController?.dispose();
     super.dispose();
@@ -903,7 +951,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       _riveController = controller;
       // Use RiveInput enum - no typos, no frozen mouths (legacy)
       _buttonState = controller.findInput<double>(RiveInput.buttonState.name) as SMINumber?;
-      _btnTarget = controller.findInput<String>(RiveInput.btnTarget.name);
+      // Note: String inputs don't exist in Rive - btnTarget removed
       _isTalking = controller.findInput<bool>(RiveInput.isTalking.name) as SMIBool?;
     }
 
@@ -948,6 +996,11 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       _terryController?.setTalking(talking);
     } else if (character == 'nigel') {
       _nigelController?.setTalking(talking);
+    }
+
+    // Also switch bone animation
+    if (_skeletonsLoaded) {
+      _setBoneAnimation(character, talking ? 'talking' : 'idle');
     }
   }
 
@@ -1522,7 +1575,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   void _setButtonState(String btn, int state) {
-    _btnTarget?.value = btn;
+    // Note: String inputs removed - btnTarget not available
     _buttonState?.value = state.toDouble();
     setState(() {});
   }
@@ -2003,10 +2056,14 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
                                       _buildPortholes(),
                                       // Characters BEHIND the table (rendered first, table on top)
                                       // Each component (body, eyes, mouth) has its own resize box
-                                      // Terry components
-                                      _buildCharacterWithComponents('terry', _terryBody, _terryMouth),
-                                      // Nigel components
-                                      _buildCharacterWithComponents('nigel', _nigelBody, _nigelMouth),
+                                      // Terry components - Positioned.fill so inner Stack positions work
+                                      Positioned.fill(
+                                        child: _buildCharacterWithComponents('terry', _terryBody, _terryMouth),
+                                      ),
+                                      // Nigel components - Positioned.fill so inner Stack positions work
+                                      Positioned.fill(
+                                        child: _buildCharacterWithComponents('nigel', _nigelBody, _nigelMouth),
+                                      ),
                                       // Table IN FRONT of characters (talk show desk) - IgnorePointer for character drag
                                       Positioned(
                                         bottom: 0,
@@ -3129,10 +3186,10 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     // Select the appropriate MovieTween for this character
     final idleTween = name == 'terry' ? terryIdleTween : nigelIdleTween;
 
-    // Base positions
-    final baseLeft = name == 'terry' ? 80.0 : null;
-    final baseRight = name == 'terry' ? null : 80.0;
-    const baseBottom = 60.0;
+    // Base positions - characters sit behind table (table is at bottom: 0)
+    final baseLeft = name == 'terry' ? 50.0 : null;
+    final baseRight = name == 'terry' ? null : 50.0;
+    const baseBottom = 120.0;  // Position characters above table baseline
 
     // Component colors for resize boxes
     final bodyColor = name == 'terry' ? Colors.cyan : Colors.lightGreen;
@@ -3554,13 +3611,19 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
   Widget _buildCharacter(String name, Image body, String mouth) {
     final artboard = name == 'terry' ? _terryArtboard : _nigelArtboard;
+    final skeleton = name == 'terry' ? _terrySkeleton : _nigelSkeleton;
 
-    // Use Rive bone animation if loaded
+    // Priority 1: Rive bone animation (if .riv file has valid artboards)
     if (_riveLoaded && artboard != null) {
       return _buildRiveCharacter(name, artboard);
     }
 
-    // Fallback to PNG images
+    // Priority 2: Custom bone animation system (if skeletons loaded)
+    if (_skeletonsLoaded && skeleton != null) {
+      return _buildBoneCharacter(name, skeleton);
+    }
+
+    // Priority 3: PNG layer fallback
     return _buildPngCharacter(name, body, mouth);
   }
 
@@ -3573,6 +3636,26 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         artboard: artboard,
         fit: BoxFit.contain,
         alignment: Alignment.bottomCenter,
+      ),
+    );
+  }
+
+  /// Build character using custom bone animation system
+  Widget _buildBoneCharacter(String name, Skeleton skeleton) {
+    final animation = name == 'terry' ? _terryAnimation : _nigelAnimation;
+    final key = name == 'terry' ? _terryBoneKey : _nigelBoneKey;
+    final basePath = 'assets/characters/$name';
+
+    return SizedBox(
+      width: skeleton.canvasSize.width * 0.6, // Scale to fit character panel
+      height: skeleton.canvasSize.height * 0.6,
+      child: BoneAnimatorWidget(
+        key: key,
+        skeleton: skeleton,
+        currentAnimation: animation,
+        assetBasePath: basePath,
+        scale: 0.6,
+        showBones: false, // Set to true for debugging
       ),
     );
   }
@@ -4108,14 +4191,17 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     final cleanText = text.replaceAll(RegExp(r'\*+'), '');
 
     // Generate and play voice audio using ElevenLabs TTS
-    if (WFLConfig.autoRoastEnabled) {
+    debugPrint('TTS: ttsEnabled=${WFLConfig.ttsEnabled}, key=${WFLConfig.elevenLabsKey.substring(0, 8)}...');
+    if (WFLConfig.ttsEnabled) {
       try {
         final voiceId = speaker == 'terry'
             ? WFLConfig.terryVoiceId
             : WFLConfig.nigelVoiceId;
+        debugPrint('TTS: Generating for $speaker with voice $voiceId');
 
         // Generate speech audio (returns PCM 44100Hz 16-bit mono)
         final pcmBytes = await _autoRoast.generateSpeech(cleanText, voiceId, character: speaker);
+        debugPrint('TTS: Got ${pcmBytes.length} bytes');
 
         if (pcmBytes.isNotEmpty && mounted && _dialoguePlaying && !_dialoguePaused) {
           // Convert PCM to WAV by adding header
@@ -4135,8 +4221,13 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
             }
           });
 
-          // Play audio
-          await _voicePlayer.play(DeviceFileSource(audioFile.path));
+          // Play audio using Windows native player (bypass audioplayers bug)
+          final wavPath = audioFile.path.replaceAll('/', '\\');
+          debugPrint('TTS: Playing $wavPath');
+          Process.run('powershell', [
+            '-Command',
+            "(New-Object Media.SoundPlayer '$wavPath').PlaySync()",
+          ]);
 
           // Simple lip-sync animation while audio plays
           _animateLipSync(speaker, cleanText.length);

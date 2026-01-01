@@ -11,7 +11,7 @@ class WFLConfig {
   // ElevenLabs API key for TTS
   static String elevenLabsKey = const String.fromEnvironment(
     'ELEVENLABS_API_KEY',
-    defaultValue: '', // Set via environment variable
+    defaultValue: 'sk_c8fc3851f83a13e433a86fb5d321eb90302ee305b514c1bf',
   );
 
   // OpenAI API key for Whisper transcription (live mic mode)
@@ -39,9 +39,12 @@ class WFLConfig {
     nigelVoiceId = nigel;
   }
 
-  // Check if auto-roast is enabled
+  // Check if auto-roast is enabled (needs both Claude + ElevenLabs)
   static bool get autoRoastEnabled =>
       claudeApiKey.isNotEmpty && elevenLabsKey.isNotEmpty;
+
+  // Check if TTS is enabled (only needs ElevenLabs)
+  static bool get ttsEnabled => elevenLabsKey.isNotEmpty;
 
   // Check if live mic mode is enabled (needs Whisper)
   static bool get liveMicEnabled =>

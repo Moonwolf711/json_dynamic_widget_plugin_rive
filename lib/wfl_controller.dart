@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:rive/rive.dart' hide LinearGradient;
+// import 'package:rive/rive.dart' hide LinearGradient; // RIVE DISABLED
+import 'rive_stub.dart';
 import 'wfl_config.dart';
 
 /// Frame data captured during recording
@@ -29,8 +30,8 @@ class WFLController extends ChangeNotifier {
   double _recordStartTime = 0;
 
   RiveAnimationController? _riveController;
-  SMIInput<double>? _mouthInput;
-  SMIInput<bool>? _isTalkingInput;
+  SMINumber? _mouthInput;
+  SMIBool? _isTalkingInput;
   StreamSubscription? _micStream;
 
   static const Map<String, double> phonemeToMouth = {
@@ -42,8 +43,8 @@ class WFLController extends ChangeNotifier {
     final controller = StateMachineController.fromArtboard(artboard, 'main');
     if (controller != null) {
       artboard.addController(controller);
-      _mouthInput = controller.findInput<double>('mouthOpen');
-      _isTalkingInput = controller.findInput<bool>('isTalking');
+      _mouthInput = controller.findInput('mouthOpen') as SMINumber?;
+      _isTalkingInput = controller.findInput('isTalking') as SMIBool?;
     }
   }
 
@@ -366,11 +367,11 @@ extension RiveArtboardExtension on Artboard {
     final controller = StateMachineController.fromArtboard(this, 'main');
     if (controller != null) {
       if (value is bool) {
-        controller.findInput<bool>(name)?.value = value;
+        (controller.findInput(name) as SMIBool?)?.value = value;
       } else if (value is double) {
-        controller.findInput<double>(name)?.value = value;
+        (controller.findInput(name) as SMINumber?)?.value = value;
       } else if (value is int) {
-        controller.findInput<double>(name)?.value = value.toDouble();
+        (controller.findInput(name) as SMINumber?)?.value = value.toDouble();
       }
     }
   }

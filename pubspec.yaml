@@ -10,8 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Rive animation (0.13+ for Data Binding API)
-  rive: ^0.13.20
+  # Rive animation (0.13.x - works with our API)
+  rive: 0.13.20
 
   # HTTP for API calls
   http: ^1.1.0
@@ -29,7 +29,7 @@ dependencies:
   ffmpeg_kit_flutter: ^6.0.0
 
   # File picking
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0
 
   # Path utilities
   path_provider: ^2.1.0
@@ -61,6 +61,7 @@ flutter:
 
   assets:
     - assets/wfl.riv  # compiled export from Rive (.rivo is source, .riv is binary)
+    - assets/skeletons/  # Custom bone animation skeletons
     - assets/path_effects/  # Custom Lua path effects
     - assets/backgrounds/
     - assets/characters/

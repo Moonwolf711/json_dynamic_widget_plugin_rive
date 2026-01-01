@@ -1,4 +1,5 @@
-import 'package:rive/rive.dart';
+// import 'package:rive/rive.dart'; // RIVE DISABLED
+import 'rive_stub.dart';
 
 /// WFL Data Binding - Controller for Rive animations
 ///
@@ -111,7 +112,9 @@ class WFLCharacterController {
   double get focusX => _focusX?.value ?? 0;
 
   void dispose() {
-    _stateMachine?.dispose();
+    // Note: StateMachineController doesn't have dispose() in Rive 0.13.x
+    // Just nullify the reference
+    _stateMachine = null;
   }
 }
 
