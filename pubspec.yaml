@@ -11,7 +11,11 @@ dependencies:
     sdk: flutter
 
   # Rive animation (0.13.x - works with our API)
+<<<<<<< HEAD
   rive: ^0.14.0
+=======
+  rive: 0.13.20
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
   # HTTP for API calls
   http: ^1.1.0
@@ -29,7 +33,11 @@ dependencies:
   ffmpeg_kit_flutter: ^6.0.0
 
   # File picking
+<<<<<<< HEAD
   file_picker: ^10.3.8
+=======
+  file_picker: ^8.0.0
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
   # Path utilities
   path_provider: ^2.1.0

@@ -2,6 +2,10 @@
 /// Custom skeletal animation for PNG layers without external tools
 library bone_animation;
 
+<<<<<<< HEAD
+=======
+import 'dart:async';
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -139,7 +143,11 @@ class BoneTransform {
     return BoneTransform(
       rotation: _lerpDouble(a?.rotation, b?.rotation, t),
       position: Offset.lerp(a?.position, b?.position, t),
+<<<<<<< HEAD
       scaleX: _lerpDouble(a?.scaleX, b?.scaleX, t),  // Fixed: was b?.scaleY
+=======
+      scaleX: _lerpDouble(a?.scaleX, b?.scaleY, t),
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
       scaleY: _lerpDouble(a?.scaleY, b?.scaleY, t),
     );
   }
@@ -257,6 +265,7 @@ class Skeleton {
     );
   }
 
+<<<<<<< HEAD
   // Cached lookups for performance
   Map<String, Bone>? _bonesByName;
   Map<String, List<Bone>>? _childrenByParent;
@@ -292,6 +301,26 @@ class Skeleton {
       _cachedRootBone ??= bones.first;
     }
     return _cachedRootBone;
+=======
+  Bone? getBone(String name) {
+    try {
+      return bones.firstWhere((b) => b.name == name);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  List<Bone> getChildren(String parentName) {
+    return bones.where((b) => b.parentName == parentName).toList();
+  }
+
+  Bone? get rootBone {
+    try {
+      return bones.firstWhere((b) => b.parentName == null);
+    } catch (e) {
+      return bones.isNotEmpty ? bones.first : null;
+    }
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
   }
 }
 
@@ -322,8 +351,18 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
   Map<String, BoneTransform> _currentTransforms = {};
   String? _currentAnimName;
 
+<<<<<<< HEAD
   // Cached Image widgets for performance (avoid recreating on every frame)
   final Map<String, Widget> _imageCache = {};
+=======
+  // Dynamic image overrides for mouth shapes and eye states
+  final Map<String, List<String>> _imageOverrides = {};
+
+  // Automatic blinking
+  Timer? _blinkTimer;
+  final _random = math.Random();
+  bool _enableAutoBlinking = true;
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
   @override
   void initState() {
@@ -333,11 +372,15 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
       duration: const Duration(seconds: 1),
     );
     _controller.addListener(_updateAnimation);
+<<<<<<< HEAD
     _buildImageCache();
+=======
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
     if (widget.currentAnimation != null) {
       playAnimation(widget.currentAnimation!);
     }
+<<<<<<< HEAD
   }
 
   /// Pre-cache all Image.asset widgets
@@ -354,17 +397,26 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
           );
         }
       }
+=======
+
+    // Start automatic blinking if skeleton has blink animation
+    if (widget.skeleton.animations.containsKey('blink')) {
+      _scheduleNextBlink();
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     }
   }
 
   @override
   void didUpdateWidget(BoneAnimatorWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+<<<<<<< HEAD
     // Rebuild cache if skeleton or base path changed
     if (widget.skeleton != oldWidget.skeleton ||
         widget.assetBasePath != oldWidget.assetBasePath) {
       _buildImageCache();
     }
+=======
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     if (widget.currentAnimation != oldWidget.currentAnimation &&
         widget.currentAnimation != null) {
       playAnimation(widget.currentAnimation!);
@@ -391,9 +443,79 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
     _controller.stop();
   }
 
+<<<<<<< HEAD
   /// Alias for playAnimation - used by dev commands
   void setAnimation(String name) {
     playAnimation(name);
+=======
+  /// Set mouth shape for lip-sync (e.g., 'a', 'e', 'o', 'x')
+  void setMouthShape(String shape) {
+    setState(() {
+      _imageOverrides['mouth'] = ['mouth_shapes/$shape.png'];
+    });
+  }
+
+  /// Set eye state for blinking (e.g., 'open', 'half', 'closed')
+  void setEyeState(String state) {
+    setState(() {
+      _imageOverrides['eyes'] = ['eyes/eyes_$state.png'];
+    });
+  }
+
+  /// Clear all image overrides
+  void clearOverrides() {
+    setState(() {
+      _imageOverrides.clear();
+    });
+  }
+
+  /// Enable or disable automatic blinking
+  void setAutoBlinking(bool enabled) {
+    _enableAutoBlinking = enabled;
+    if (enabled && _blinkTimer == null) {
+      _scheduleNextBlink();
+    } else if (!enabled) {
+      _blinkTimer?.cancel();
+      _blinkTimer = null;
+    }
+  }
+
+  /// Schedule next blink at random interval (3-8 seconds)
+  void _scheduleNextBlink() {
+    if (!_enableAutoBlinking) return;
+
+    _blinkTimer?.cancel();
+    final delay = Duration(
+      milliseconds: 3000 + _random.nextInt(5000), // 3-8 seconds
+    );
+
+    _blinkTimer = Timer(delay, () {
+      _triggerBlink();
+      _scheduleNextBlink(); // Schedule next blink
+    });
+  }
+
+  /// Trigger a single blink animation
+  void _triggerBlink() {
+    final blinkAnim = widget.skeleton.animations['blink'];
+    if (blinkAnim == null) return;
+
+    // Temporarily play blink animation
+    // Note: This is a simplified approach. For production, you'd want
+    // to blend animations or use an animation layer system.
+    final previousAnim = _currentAnimName;
+    playAnimation('blink');
+
+    // Return to previous animation after blink completes
+    Future.delayed(
+      Duration(milliseconds: (blinkAnim.duration * 1000).round()),
+      () {
+        if (previousAnim != null && mounted) {
+          playAnimation(previousAnim);
+        }
+      },
+    );
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
   }
 
   void _updateAnimation() {
@@ -411,11 +533,23 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
   @override
   void dispose() {
     _controller.dispose();
+<<<<<<< HEAD
+=======
+    _blinkTimer?.cancel();
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
+=======
+    // Debug: verify showBones parameter
+    if (widget.showBones) {
+      debugPrint('🔴 BoneAnimator: showBones=true, rendering debug overlay');
+    }
+
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     return SizedBox(
       width: widget.skeleton.canvasSize.width * widget.scale,
       height: widget.skeleton.canvasSize.height * widget.scale,
@@ -425,6 +559,24 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
           // Render bones recursively from root
           if (widget.skeleton.rootBone != null)
             _buildBoneTree(widget.skeleton.rootBone!, Offset.zero, 0),
+<<<<<<< HEAD
+=======
+
+          // Debug: Add bright overlay indicator
+          if (widget.showBones)
+            Positioned(
+              top: 0,
+              left: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                color: Colors.red,
+                child: const Text(
+                  'BONES',
+                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
         ],
       ),
     );
@@ -447,8 +599,13 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
     return Stack(
       clipBehavior: Clip.none,
       children: [
+<<<<<<< HEAD
         // Render attached images (using cached widgets)
         for (final imagePath in bone.attachedImages)
+=======
+        // Render attached images (use overrides if available)
+        for (final imagePath in (_imageOverrides[bone.name] ?? bone.attachedImages))
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           Positioned(
             left: worldPos.dx * widget.scale,
             top: worldPos.dy * widget.scale,
@@ -463,13 +620,24 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
                   transform?.scaleX ?? 1.0,
                   transform?.scaleY ?? 1.0,
                 ),
+<<<<<<< HEAD
               child: _imageCache['${widget.assetBasePath}/$imagePath'] ??
                   const SizedBox(),
+=======
+              child: Image.asset(
+                '${widget.assetBasePath}/$imagePath',
+                errorBuilder: (_, __, ___) => const SizedBox(),
+              ),
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
             ),
           ),
 
         // Debug: show bone
+<<<<<<< HEAD
         if (widget.showBones)
+=======
+        if (widget.showBones) ...[
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           Positioned(
             left: worldPos.dx * widget.scale,
             top: worldPos.dy * widget.scale,
@@ -478,14 +646,39 @@ class BoneAnimatorWidgetState extends State<BoneAnimatorWidget>
               alignment: Alignment.topLeft,
               child: Container(
                 width: bone.length * widget.scale,
+<<<<<<< HEAD
                 height: 4,
                 decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(2),
+=======
+                height: 6, // Slightly thicker
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(1.0), // Fully opaque
+                  borderRadius: BorderRadius.circular(3),
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
                 ),
               ),
             ),
           ),
+<<<<<<< HEAD
+=======
+          // Add a bright circle at bone position
+          Positioned(
+            left: worldPos.dx * widget.scale - 5,
+            top: worldPos.dy * widget.scale - 5,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: Colors.yellow,
+                border: Border.all(color: Colors.black, width: 2),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
         // Render children
         for (final child in children)

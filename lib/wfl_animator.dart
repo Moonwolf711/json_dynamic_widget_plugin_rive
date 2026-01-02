@@ -4,9 +4,18 @@ import 'dart:math' show Random;
 import 'dart:ui' as ui;
 
 import 'package:audioplayers/audioplayers.dart';
+<<<<<<< HEAD
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+=======
+import 'package:simple_animations/simple_animations.dart';
+import 'package:video_player/video_player.dart';
+// file_picker removed - using drag-and-drop instead
+// RIVE DISABLED: Using custom bone animation to avoid Windows path length issues
+// import 'package:rive/rive.dart' hide LinearGradient, Image;
+import 'rive_stub.dart'; // Stub classes when Rive is disabled
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -19,6 +28,7 @@ import 'record_stub.dart';
 // import 'package:rive/rive.dart' hide LinearGradient, Image;
 import 'rive_stub.dart'; // Stub classes when Rive is disabled
 import 'sound_effects.dart';
+<<<<<<< HEAD
 import 'wfl_ai_chat_dev.dart';
 import 'wfl_config.dart';
 import 'wfl_controller.dart';
@@ -39,6 +49,22 @@ import 'widgets/wfl_sfx_panel.dart';
 import 'widgets/wfl_subtitle_bar.dart';
 import 'widgets/wfl_top_bar.dart';
 import 'widgets/wfl_warp_hud.dart';
+=======
+import 'bone_animation.dart';
+
+/// Rive input names - enum prevents typos that freeze the mouth forever
+/// (Legacy - kept for backwards compatibility with old .riv files)
+enum RiveInput {
+  isTalking('isTalking'),
+  lipShape('lipShape'),
+  windowAdded('windowAdded'),
+  buttonState('buttonState'),
+  btnTarget('btnTarget');
+
+  final String name;
+  const RiveInput(this.name);
+}
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
 class WFLAnimator extends StatefulWidget {
   const WFLAnimator({super.key});
@@ -339,8 +365,12 @@ class _WFLAnimatorState extends State<WFLAnimator>
     _loadRiveAnimations();
 
     // Also load custom skeletons (fallback when Rive doesn't work)
+<<<<<<< HEAD
     // DISABLED: Using PNG layer system with MirrorAnimationBuilder for now
     // _loadSkeletons();
+=======
+    _loadSkeletons();
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
     // Start background music on app open (dating show vibe!)
     SoundEffects().startBackgroundMusic();
@@ -477,6 +507,7 @@ class _WFLAnimatorState extends State<WFLAnimator>
   Future<void> _loadSkeletons() async {
     try {
       // Load Terry skeleton
+<<<<<<< HEAD
       _terrySkeleton =
           await loadSkeleton('assets/skeletons/terry_skeleton.json');
       debugPrint(
@@ -487,6 +518,14 @@ class _WFLAnimatorState extends State<WFLAnimator>
           await loadSkeleton('assets/skeletons/nigel_skeleton.json');
       debugPrint(
           'Nigel skeleton loaded: ${_nigelSkeleton!.bones.length} bones, ${_nigelSkeleton!.animations.length} animations');
+=======
+      _terrySkeleton = await loadSkeleton('assets/skeletons/terry_skeleton.json');
+      debugPrint('Terry skeleton loaded: ${_terrySkeleton!.bones.length} bones, ${_terrySkeleton!.animations.length} animations');
+
+      // Load Nigel skeleton
+      _nigelSkeleton = await loadSkeleton('assets/skeletons/nigel_skeleton.json');
+      debugPrint('Nigel skeleton loaded: ${_nigelSkeleton!.bones.length} bones, ${_nigelSkeleton!.animations.length} animations');
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
       setState(() => _skeletonsLoaded = true);
       debugPrint('Custom bone animation skeletons loaded successfully');
@@ -1319,11 +1358,17 @@ class _WFLAnimatorState extends State<WFLAnimator>
       artboard.addController(controller);
       _riveController = controller;
       // Use RiveInput enum - no typos, no frozen mouths (legacy)
+<<<<<<< HEAD
       _buttonState = controller.findInput<double>(RiveInput.buttonState.name)
           as SMINumber?;
       // Note: String inputs don't exist in Rive - btnTarget removed
       _isTalking =
           controller.findInput<bool>(RiveInput.isTalking.name) as SMIBool?;
+=======
+      _buttonState = controller.findInput<double>(RiveInput.buttonState.name) as SMINumber?;
+      // Note: String inputs don't exist in Rive - btnTarget removed
+      _isTalking = controller.findInput<bool>(RiveInput.isTalking.name) as SMIBool?;
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     }
 
     // Initialize Data Binding controllers (new API)
@@ -1346,17 +1391,27 @@ class _WFLAnimatorState extends State<WFLAnimator>
 
   /// Set mouth shape using Data Binding or legacy sprites
   void _setMouth(String character, String phoneme) {
+    final mouthShape = phoneme.toLowerCase();
+
     if (character == 'terry') {
       if (_terryController?.hasDataBinding == true) {
         _terryController!.setMouthFromPhoneme(phoneme);
       } else {
-        setState(() => _terryMouth = phoneme.toLowerCase());
+        setState(() => _terryMouth = mouthShape);
+      }
+      // Also update bone animator mouth
+      if (_skeletonsLoaded) {
+        _terryBoneKey.currentState?.setMouthShape(mouthShape);
       }
     } else if (character == 'nigel') {
       if (_nigelController?.hasDataBinding == true) {
         _nigelController!.setMouthFromPhoneme(phoneme);
       } else {
-        setState(() => _nigelMouth = phoneme.toLowerCase());
+        setState(() => _nigelMouth = mouthShape);
+      }
+      // Also update bone animator mouth
+      if (_skeletonsLoaded) {
+        _nigelBoneKey.currentState?.setMouthShape(mouthShape);
       }
     }
   }
@@ -2503,8 +2558,36 @@ class _WFLAnimatorState extends State<WFLAnimator>
                                           child: _buildHotkeyHints(),
                                         ),
 
+<<<<<<< HEAD
                                         // WARP HUD - green text overlay
                                         if (_isWarp) _buildWarpHUD(),
+=======
+                                      // Ship overlay (always on top) - IgnorePointer so characters can be dragged
+                                      Positioned.fill(child: IgnorePointer(child: _buttonsPanel)),
+                                      _buildPortholes(),
+                                      // Characters BEHIND the table (rendered first, table on top)
+                                      // Each component (body, eyes, mouth) has its own resize box
+                                      // Terry components - Positioned.fill so inner Stack positions work
+                                      Positioned.fill(
+                                        child: _buildCharacterWithComponents('terry', _terryBody, _terryMouth),
+                                      ),
+                                      // Nigel components - Positioned.fill so inner Stack positions work
+                                      Positioned.fill(
+                                        child: _buildCharacterWithComponents('nigel', _nigelBody, _nigelMouth),
+                                      ),
+                                      // Table IN FRONT of characters (talk show desk) - IgnorePointer for character drag
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: IgnorePointer(child: _table),
+                                      ),
+                                      Positioned(
+                                        bottom: 10,
+                                        right: 10,
+                                        child: _buildHotkeyHints(),
+                                      ),
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
                                         // Subtitle bar at bottom
                                         _buildSubtitleBar(),
@@ -3009,6 +3092,7 @@ class _WFLAnimatorState extends State<WFLAnimator>
   Widget _buildCharacter(String name) {
     final reactionMods = _getReactionModifiers(name);
 
+<<<<<<< HEAD
     return WFLCharacter(
       name: name,
       riveLoaded: _riveLoaded,
@@ -3114,11 +3198,553 @@ class _WFLAnimatorState extends State<WFLAnimator>
             _nigelMouthOffset = Offset.zero;
           }
         });
+=======
+    // Get component transforms for this character
+    final bodyScale = name == 'terry' ? _terryBodyScale : _nigelBodyScale;
+    final bodyOffset = name == 'terry' ? _terryBodyOffset : _nigelBodyOffset;
+    final eyesScale = name == 'terry' ? _terryEyesScale : _nigelEyesScale;
+    final eyesOffset = name == 'terry' ? _terryEyesOffset : _nigelEyesOffset;
+    final mouthScale = name == 'terry' ? _terryMouthScale : _nigelMouthScale;
+    final mouthOffset = name == 'terry' ? _terryMouthOffset : _nigelMouthOffset;
+
+    // Select the appropriate MovieTween for this character
+    final idleTween = name == 'terry' ? terryIdleTween : nigelIdleTween;
+
+    // Base positions - characters sit behind table (table is at bottom: 0)
+    final baseLeft = name == 'terry' ? 50.0 : null;
+    final baseRight = name == 'terry' ? null : 50.0;
+    const baseBottom = 120.0;  // Position characters above table baseline
+
+    // Component colors for resize boxes
+    final bodyColor = name == 'terry' ? Colors.cyan : Colors.lightGreen;
+    final eyesColor = name == 'terry' ? Colors.blue : Colors.teal;
+    final mouthColor = name == 'terry' ? Colors.orange : Colors.amber;
+
+    // WRAP ENTIRE CHARACTER IN MIRRORANIMATIONBUILDER
+    // This gives us fluid bone-like movement: breathing, swaying, head bobbing
+    // MirrorAnimationBuilder automatically loops forward<->backward for seamless idle
+    return MirrorAnimationBuilder<Movie>(
+      tween: idleTween,
+      duration: idleTween.duration,
+      builder: (context, value, child) {
+        // Extract animation values from MovieTween
+        final breathY = value.get<double>('breathY');
+        final eyeX = value.get<double>('eyeX');
+        final eyeY = value.get<double>('eyeY');
+        final headBob = value.get<double>('headBob');
+        final sway = value.get<double>('sway');
+        final lean = value.get<double>('lean');
+
+        return Transform(
+          transform: Matrix4.identity()
+            ..translate(sway, breathY + headBob)
+            ..rotateZ(lean * 0.01),
+          alignment: Alignment.bottomCenter,
+          child: _buildCharacter(name, body, mouth), // Use bone animation if available!
+        );
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
       },
     );
   }
 
+<<<<<<< HEAD
   /// Build character using Rive bone animation
+=======
+  /// Helper: Build the character component stack (extracted for MirrorAnimationBuilder)
+  Widget _buildCharacterStack({
+    required String name,
+    required Map<String, dynamic> config,
+    required String blinkState,
+    required double eyeX,
+    required double eyeY,
+    required double headBob,
+    required double bodyScale,
+    required Offset bodyOffset,
+    required double eyesScale,
+    required Offset eyesOffset,
+    required double mouthScale,
+    required Offset mouthOffset,
+    required double? baseLeft,
+    required double? baseRight,
+    required double baseBottom,
+    required Color bodyColor,
+    required Color eyesColor,
+    required Color mouthColor,
+    required Image body,
+    required String mouth,
+  }) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // BODY - main character sprite
+        Positioned(
+          left: baseLeft != null ? baseLeft + bodyOffset.dx : null,
+          right: baseRight != null ? baseRight - bodyOffset.dx : null,
+          bottom: baseBottom + bodyOffset.dy,
+          child: _buildResizableComponent(
+            label: '${name.toUpperCase()} BODY',
+            color: bodyColor,
+            scale: bodyScale,
+            onScaleUpdate: (scale) {
+              setState(() {
+                if (name == 'terry') {
+                  _terryBodyScale = scale.clamp(_minScale, _maxScale);
+                } else {
+                  _nigelBodyScale = scale.clamp(_minScale, _maxScale);
+                }
+              });
+            },
+            onDragUpdate: (delta) {
+              setState(() {
+                if (name == 'terry') {
+                  _terryBodyOffset += delta;
+                } else {
+                  _nigelBodyOffset += Offset(-delta.dx, delta.dy);
+                }
+              });
+            },
+            onReset: () {
+              setState(() {
+                if (name == 'terry') {
+                  _terryBodyScale = _defaultScale;
+                  _terryBodyOffset = Offset.zero;
+                } else {
+                  _nigelBodyScale = _defaultScale;
+                  _nigelBodyOffset = Offset.zero;
+                }
+              });
+            },
+            child: SizedBox(
+              // Use proper aspect ratio: Nigel is landscape (1.83:1), Terry is portrait
+              width: config['bodyAspectRatio'] != null ? 400 : 300,
+              height: config['bodyAspectRatio'] != null ? (400 / (config['bodyAspectRatio'] as double)).round().toDouble() : 400,
+              child: body,
+            ),
+          ),
+        ),
+
+        // EYES - if character has separate eye sprites
+        if (config['hasEyes'] == true)
+          Builder(builder: (context) {
+            // Calculate container height based on aspect ratio
+            final containerHeight = config['bodyAspectRatio'] != null
+                ? (400 / (config['bodyAspectRatio'] as double)).round().toDouble()
+                : 400.0;
+            return Positioned(
+              left: baseLeft != null
+                  ? baseLeft + bodyOffset.dx + (config['eyesX'] as double) + eyeX + eyesOffset.dx
+                  : null,
+              right: baseRight != null
+                  ? baseRight - bodyOffset.dx - (config['eyesX'] as double) - eyeX - eyesOffset.dx
+                  : null,
+              bottom: baseBottom + bodyOffset.dy + (containerHeight - (config['eyesY'] as double) - eyeY) + eyesOffset.dy,
+            child: _buildResizableComponent(
+              label: '${name.toUpperCase()} EYES',
+              color: eyesColor,
+              scale: eyesScale,
+              onScaleUpdate: (scale) {
+                setState(() {
+                  if (name == 'terry') {
+                    _terryEyesScale = scale.clamp(_minScale, _maxScale);
+                  } else {
+                    _nigelEyesScale = scale.clamp(_minScale, _maxScale);
+                  }
+                });
+              },
+              onDragUpdate: (delta) {
+                setState(() {
+                  if (name == 'terry') {
+                    _terryEyesOffset += delta;
+                  } else {
+                    _nigelEyesOffset += Offset(-delta.dx, delta.dy);
+                  }
+                });
+              },
+              onReset: () {
+                setState(() {
+                  if (name == 'terry') {
+                    _terryEyesScale = _defaultScale;
+                    _terryEyesOffset = Offset.zero;
+                  } else {
+                    _nigelEyesScale = _defaultScale;
+                    _nigelEyesOffset = Offset.zero;
+                  }
+                });
+              },
+              child: Image.asset(
+                'assets/characters/$name/eyes/eyes_$blinkState.png',
+                width: config['eyesWidth'] as double,  // Scale applied by Transform.scale
+                height: config['eyesHeight'] as double,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 100,
+                  height: 40,
+                  color: eyesColor.withOpacity(0.3),
+                  child: const Center(child: Text('EYES', style: TextStyle(color: Colors.white, fontSize: 10))),
+                ),
+              ),
+            ),
+            ); // Close Positioned
+          }), // Close Builder
+
+        // MOUTH - lip sync shapes
+        // Check if mouth is full-frame (already positioned in image) or cropped (needs positioning)
+        if (config['mouthFullFrame'] == true)
+          // FULL-FRAME MOUTH (Nigel) - overlay at same position as body, no manual positioning needed
+          Positioned(
+            left: baseLeft != null ? baseLeft + bodyOffset.dx : null,
+            right: baseRight != null ? baseRight - bodyOffset.dx : null,
+            bottom: baseBottom + bodyOffset.dy,
+            child: IgnorePointer(
+              child: SizedBox(
+                // Match body container size for proper overlay
+                width: config['bodyAspectRatio'] != null ? 400 : 300,
+                height: config['bodyAspectRatio'] != null ? (400 / (config['bodyAspectRatio'] as double)).round().toDouble() : 400,
+                child: Image.asset(
+                  'assets/characters/$name/mouth_shapes/$mouth.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          )
+        else
+          // CROPPED MOUTH (Terry) - needs manual positioning
+          Positioned(
+            left: baseLeft != null
+                ? baseLeft + bodyOffset.dx + (config['mouthX'] as double) + mouthOffset.dx
+                : null,
+            right: baseRight != null
+                ? baseRight - bodyOffset.dx - (config['mouthX'] as double) - mouthOffset.dx
+                : null,
+            bottom: baseBottom + bodyOffset.dy + (400 - (config['mouthY'] as double)) + mouthOffset.dy,
+            child: _buildResizableComponent(
+              label: '${name.toUpperCase()} MOUTH',
+              color: mouthColor,
+              scale: mouthScale,
+              onScaleUpdate: (scale) {
+                setState(() {
+                  if (name == 'terry') {
+                    _terryMouthScale = scale.clamp(_minScale, _maxScale);
+                  } else {
+                    _nigelMouthScale = scale.clamp(_minScale, _maxScale);
+                  }
+                });
+              },
+              onDragUpdate: (delta) {
+                setState(() {
+                  if (name == 'terry') {
+                    _terryMouthOffset += delta;
+                  } else {
+                    _nigelMouthOffset += Offset(-delta.dx, delta.dy);
+                  }
+                });
+              },
+              onReset: () {
+                setState(() {
+                  if (name == 'terry') {
+                    _terryMouthScale = _defaultScale;
+                    _terryMouthOffset = Offset.zero;
+                  } else {
+                    _nigelMouthScale = _defaultScale;
+                    _nigelMouthOffset = Offset.zero;
+                  }
+                });
+              },
+              child: Image.asset(
+                'assets/characters/$name/mouth_shapes/$mouth.png',
+                width: config['mouthWidth'] as double,  // Scale applied by Transform.scale
+                height: config['mouthHeight'] as double,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 80,
+                  height: 40,
+                  color: mouthColor.withOpacity(0.3),
+                  child: const Center(child: Text('MOUTH', style: TextStyle(color: Colors.white, fontSize: 10))),
+                ),
+              ),
+            ),
+          ),
+      ],
+    ); // Close Stack
+  }
+
+  /// Build a resizable component with visible handles
+  Widget _buildResizableComponent({
+    required String label,
+    required Color color,
+    required double scale,
+    required void Function(double) onScaleUpdate,
+    required void Function(Offset) onDragUpdate,
+    required VoidCallback onReset,
+    required Widget child,
+  }) {
+    const handleSize = 14.0;
+
+    return Listener(
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) {
+          final delta = event.scrollDelta.dy > 0 ? -0.05 : 0.05;
+          onScaleUpdate(scale + delta);
+        }
+      },
+      // APPLY SCALE via Transform.scale - this is what makes resize actually work!
+      child: Transform.scale(
+        scale: scale,
+        alignment: Alignment.bottomCenter,
+        child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Main content with border
+          MouseRegion(
+            cursor: SystemMouseCursors.grab,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onPanUpdate: (details) => onDragUpdate(details.delta),
+              onDoubleTap: onReset,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: color.withOpacity(0.7), width: 2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: child,
+              ),
+            ),
+          ),
+
+          // Label tag
+          Positioned(
+            top: -18,
+            left: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(4),
+                ),
+              ),
+              child: Text(
+                '$label ${(scale * 100).toInt()}%',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+
+          // Corner resize handles
+          // Top-left
+          Positioned(
+            top: -handleSize / 2,
+            left: -handleSize / 2,
+            child: _buildHandle(
+              cursor: SystemMouseCursors.resizeUpLeft,
+              color: color,
+              size: handleSize,
+              onDrag: (delta) => onScaleUpdate(scale + (-delta.dx + -delta.dy) * 0.005),
+            ),
+          ),
+          // Top-right
+          Positioned(
+            top: -handleSize / 2,
+            right: -handleSize / 2,
+            child: _buildHandle(
+              cursor: SystemMouseCursors.resizeUpRight,
+              color: color,
+              size: handleSize,
+              onDrag: (delta) => onScaleUpdate(scale + (delta.dx + -delta.dy) * 0.005),
+            ),
+          ),
+          // Bottom-left
+          Positioned(
+            bottom: -handleSize / 2,
+            left: -handleSize / 2,
+            child: _buildHandle(
+              cursor: SystemMouseCursors.resizeDownLeft,
+              color: color,
+              size: handleSize,
+              onDrag: (delta) => onScaleUpdate(scale + (-delta.dx + delta.dy) * 0.005),
+            ),
+          ),
+          // Bottom-right
+          Positioned(
+            bottom: -handleSize / 2,
+            right: -handleSize / 2,
+            child: _buildHandle(
+              cursor: SystemMouseCursors.resizeDownRight,
+              color: color,
+              size: handleSize,
+              onDrag: (delta) => onScaleUpdate(scale + (delta.dx + delta.dy) * 0.005),
+            ),
+          ),
+        ],
+      ), // Close Stack
+      ), // Close Transform.scale
+    ); // Close Listener
+  }
+
+  /// Build a single resize handle
+  Widget _buildHandle({
+    required MouseCursor cursor,
+    required Color color,
+    required double size,
+    required void Function(Offset) onDrag,
+  }) {
+    return MouseRegion(
+      cursor: cursor,
+      child: GestureDetector(
+        onPanUpdate: (details) => onDrag(details.delta),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: color,
+            border: Border.all(color: Colors.white, width: 1.5),
+            borderRadius: BorderRadius.circular(3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 2,
+                offset: const Offset(1, 1),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCharacter(String name, Image body, String mouth) {
+    final artboard = name == 'terry' ? _terryArtboard : _nigelArtboard;
+    final skeleton = name == 'terry' ? _terrySkeleton : _nigelSkeleton;
+
+    // Priority 1: Rive bone animation (if .riv file has valid artboards)
+    if (_riveLoaded && artboard != null) {
+      debugPrint('📊 Rendering $name with RIVE');
+      return _buildRiveCharacter(name, artboard);
+    }
+
+    // Priority 2: Custom bone animation system (if skeletons loaded)
+    if (_skeletonsLoaded && skeleton != null) {
+      debugPrint('🦴 Rendering $name with BONE ANIMATION (showBones will be true)');
+      return _buildBoneCharacter(name, skeleton);
+    }
+
+    // Priority 3: PNG layer fallback
+    debugPrint('🖼️ Rendering $name with PNG FALLBACK');
+    return _buildPngCharacter(name, body, mouth);
+  }
+
+  /// Build character using Rive bone animation
+  Widget _buildRiveCharacter(String name, Artboard artboard) {
+    return SizedBox(
+      width: 300,
+      height: 400,
+      child: Rive(
+        artboard: artboard,
+        fit: BoxFit.contain,
+        alignment: Alignment.bottomCenter,
+      ),
+    );
+  }
+
+  /// Build character using custom bone animation system
+  Widget _buildBoneCharacter(String name, Skeleton skeleton) {
+    final animation = name == 'terry' ? _terryAnimation : _nigelAnimation;
+    final key = name == 'terry' ? _terryBoneKey : _nigelBoneKey;
+    final basePath = 'assets/characters/$name';
+
+    return SizedBox(
+      width: skeleton.canvasSize.width * 0.6, // Scale to fit character panel
+      height: skeleton.canvasSize.height * 0.6,
+      child: BoneAnimatorWidget(
+        key: key,
+        skeleton: skeleton,
+        currentAnimation: animation,
+        assetBasePath: basePath,
+        scale: 0.6,
+        showBones: true, // Debug: visualize bone structure
+      ),
+    );
+  }
+
+  /// Build character using transparent PNG images (fallback)
+  /// Uses simple_animations MirrorAnimationBuilder for organic idle motion
+  Widget _buildPngCharacter(String name, Image body, String mouth) {
+    final config = _characterConfig[name] ?? _characterConfig['terry']!;
+    final blinkState = name == 'terry' ? _terryBlinkState : _nigelBlinkState;
+
+    // Select the appropriate MovieTween for this character
+    final idleTween = name == 'terry' ? terryIdleTween : nigelIdleTween;
+
+    // Apply reaction modifiers
+    final reactionMods = _getReactionModifiers(name);
+    final bobMod = reactionMods['bobMultiplier'] ?? 1.0;
+    final swayMod = reactionMods['swayMultiplier'] ?? 1.0;
+    final leanOffset = reactionMods['leanOffset'] ?? 0.0;
+
+    return MirrorAnimationBuilder<Movie>(
+      tween: idleTween,
+      duration: idleTween.duration,
+      builder: (context, value, child) {
+        // Extract animation values from MovieTween
+        final breathY = value.get<double>('breathY');
+        final eyeX = value.get<double>('eyeX');
+        final eyeY = value.get<double>('eyeY');
+        final headBob = value.get<double>('headBob');
+        final sway = value.get<double>('sway');
+        final lean = value.get<double>('lean');
+
+        return Transform(
+          // Apply multiple transforms: sway, lean, and bob (modified by reactions)
+          transform: Matrix4.identity()
+            ..translate(sway * swayMod, breathY + headBob * bobMod)
+            ..rotateZ((lean * 0.01) + leanOffset),
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(
+            width: 300,
+            height: 400,
+            child: Stack(
+              children: [
+                // Use transparent full-body character image
+                Positioned.fill(
+                  child: body,
+                ),
+
+                // Eyes layer (if character has separate eye sprites)
+                if (config['hasEyes'] == true)
+                  Positioned(
+                    left: (config['eyesX'] as double) + eyeX,
+                    top: (config['eyesY'] as double) + eyeY + headBob * 0.3,
+                    child: Image.asset(
+                      'assets/characters/$name/eyes/eyes_$blinkState.png',
+                      width: config['eyesWidth'] as double,
+                      height: config['eyesHeight'] as double,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+
+                // Mouth layer (swapped based on current phoneme)
+                Positioned(
+                  left: config['mouthX'] as double,
+                  top: (config['mouthY'] as double) + headBob * 0.3,
+                  child: Image.asset(
+                    'assets/characters/$name/mouth_shapes/$mouth.png',
+                    width: config['mouthWidth'] as double,
+                    height: config['mouthHeight'] as double,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
   // ==================== SUBTITLE SYSTEM ====================
 
@@ -3331,8 +3957,12 @@ class _WFLAnimatorState extends State<WFLAnimator>
     final cleanText = text.replaceAll(RegExp(r'\*+'), '');
 
     // Generate and play voice audio using ElevenLabs TTS
+<<<<<<< HEAD
     debugPrint(
         'TTS: ttsEnabled=${WFLConfig.ttsEnabled}, key=${WFLConfig.elevenLabsKey.substring(0, 8)}...');
+=======
+    debugPrint('TTS: ttsEnabled=${WFLConfig.ttsEnabled}, key=${WFLConfig.elevenLabsKey.substring(0, 8)}...');
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     if (WFLConfig.ttsEnabled) {
       try {
         final voiceId = speaker == 'terry'
@@ -3341,8 +3971,12 @@ class _WFLAnimatorState extends State<WFLAnimator>
         debugPrint('TTS: Generating for $speaker with voice $voiceId');
 
         // Generate speech audio (returns PCM 44100Hz 16-bit mono)
+<<<<<<< HEAD
         final pcmBytes = await _autoRoast.generateSpeech(cleanText, voiceId,
             character: speaker);
+=======
+        final pcmBytes = await _autoRoast.generateSpeech(cleanText, voiceId, character: speaker);
+>>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
         debugPrint('TTS: Got ${pcmBytes.length} bytes');
 
         if (pcmBytes.isNotEmpty &&
