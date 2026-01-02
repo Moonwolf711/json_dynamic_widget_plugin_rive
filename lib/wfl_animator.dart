@@ -4,21 +4,14 @@ import 'dart:math' show Random;
 import 'dart:ui' as ui;
 
 import 'package:audioplayers/audioplayers.dart';
-<<<<<<< HEAD
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-=======
+import 'package:path_provider/path_provider.dart';
 import 'package:simple_animations/simple_animations.dart';
 import 'package:video_player/video_player.dart';
-// file_picker removed - using drag-and-drop instead
-// RIVE DISABLED: Using custom bone animation to avoid Windows path length issues
-// import 'package:rive/rive.dart' hide LinearGradient, Image;
-import 'rive_stub.dart'; // Stub classes when Rive is disabled
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
-import 'package:path_provider/path_provider.dart';
-import 'package:video_player/video_player.dart';
 
+import 'action_dispatcher.dart';
 import 'bone_animation.dart';
 import 'dev_commands.dart';
 // Stubbed for Windows build - mic recording not supported
@@ -28,7 +21,6 @@ import 'record_stub.dart';
 // import 'package:rive/rive.dart' hide LinearGradient, Image;
 import 'rive_stub.dart'; // Stub classes when Rive is disabled
 import 'sound_effects.dart';
-<<<<<<< HEAD
 import 'wfl_ai_chat_dev.dart';
 import 'wfl_config.dart';
 import 'wfl_controller.dart';
@@ -49,22 +41,7 @@ import 'widgets/wfl_sfx_panel.dart';
 import 'widgets/wfl_subtitle_bar.dart';
 import 'widgets/wfl_top_bar.dart';
 import 'widgets/wfl_warp_hud.dart';
-=======
-import 'bone_animation.dart';
 
-/// Rive input names - enum prevents typos that freeze the mouth forever
-/// (Legacy - kept for backwards compatibility with old .riv files)
-enum RiveInput {
-  isTalking('isTalking'),
-  lipShape('lipShape'),
-  windowAdded('windowAdded'),
-  buttonState('buttonState'),
-  btnTarget('btnTarget');
-
-  final String name;
-  const RiveInput(this.name);
-}
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
 class WFLAnimator extends StatefulWidget {
   const WFLAnimator({super.key});
@@ -185,20 +162,20 @@ class _WFLAnimatorState extends State<WFLAnimator>
   // Each component (body, eyes, mouth) has independent scale and offset
 
   // Terry components
-  double _terryBodyScale = 1.0;
-  Offset _terryBodyOffset = Offset.zero;
-  double _terryEyesScale = 1.0;
-  Offset _terryEyesOffset = Offset.zero;
-  double _terryMouthScale = 1.0;
-  Offset _terryMouthOffset = Offset.zero;
+  final double _terryBodyScale = 1.0;
+  final Offset _terryBodyOffset = Offset.zero;
+  final double _terryEyesScale = 1.0;
+  final Offset _terryEyesOffset = Offset.zero;
+  final double _terryMouthScale = 1.0;
+  final Offset _terryMouthOffset = Offset.zero;
 
   // Nigel components
-  double _nigelBodyScale = 1.0;
-  Offset _nigelBodyOffset = Offset.zero;
-  double _nigelEyesScale = 1.0;
-  Offset _nigelEyesOffset = Offset.zero;
-  double _nigelMouthScale = 1.0;
-  Offset _nigelMouthOffset = Offset.zero;
+  final double _nigelBodyScale = 1.0;
+  final Offset _nigelBodyOffset = Offset.zero;
+  final double _nigelEyesScale = 1.0;
+  final Offset _nigelEyesOffset = Offset.zero;
+  final double _nigelMouthScale = 1.0;
+  final Offset _nigelMouthOffset = Offset.zero;
 
   // Animation state for PNG fallback character rendering
   // These are used by _buildPngCharacter when Rive is not available
@@ -220,13 +197,13 @@ class _WFLAnimatorState extends State<WFLAnimator>
   static const double _defaultScale = 1.0;
 
   // Subtitle system
-  String _subtitleText = '';
-  String _subtitleSpeaker = ''; // 'terry', 'nigel', or '' for narrator
-  bool _subtitleVisible = false;
+  final String _subtitleText = '';
+  final String _subtitleSpeaker = ''; // 'terry', 'nigel', or '' for narrator
+  final bool _subtitleVisible = false;
   Timer? _subtitleTimer;
 
   // SFX Panel
-  bool _sfxPanelExpanded = true; // Start expanded so user sees buttons
+  final bool _sfxPanelExpanded = true; // Start expanded so user sees buttons
 
   // NOTE: HeadBob, Sway, Lean now handled by MirrorAnimationBuilder + MovieTween
   // See _buildCharacterWithComponents() and _buildPngCharacter() for usage
@@ -238,10 +215,10 @@ class _WFLAnimatorState extends State<WFLAnimator>
   bool _isGeneratingCommentary = false;
 
   // Dialogue playback state
-  bool _dialoguePlaying = false;
-  bool _dialoguePaused = false;
+  final bool _dialoguePlaying = false;
+  final bool _dialoguePaused = false;
   Timer? _dialogueTimer;
-  int _dialogueIndex = 0;
+  final int _dialogueIndex = 0;
 
   // Sample dialogue lines for demo
   static const List<Map<String, String>> _sampleDialogue = [
