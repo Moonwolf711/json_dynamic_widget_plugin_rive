@@ -205,6 +205,11 @@ class _WFLAnimatorState extends State<WFLAnimator>
   // SFX Panel
   final bool _sfxPanelExpanded = true; // Start expanded so user sees buttons
 
+  // ============ ACTION DISPATCHER SYSTEM ============
+  // Unified button action handling for SFX, controls, state machines
+  late final ButtonState _buttonState;
+  late final ActionDispatcher _actionDispatcher;
+
   // NOTE: HeadBob, Sway, Lean now handled by MirrorAnimationBuilder + MovieTween
   // See _buildCharacterWithComponents() and _buildPngCharacter() for usage
 
