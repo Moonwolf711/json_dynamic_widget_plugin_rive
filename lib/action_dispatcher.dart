@@ -161,14 +161,14 @@ class ButtonState extends ChangeNotifier {
 // ==================== ACTION DISPATCHER ====================
 
 /// Central dispatcher for all button actions
-class ActionDispatcher {
+class WFLActionDispatcher {
   final String baseUrl;
   final ButtonState state;
   final void Function(String)? onSfxPlay;
   final void Function(String)? onStateMachineTransition;
   final void Function(String, Map<String, dynamic>)? onWsEmit;
 
-  ActionDispatcher({
+  WFLActionDispatcher({
     required this.baseUrl,
     required this.state,
     this.onSfxPlay,
@@ -183,7 +183,7 @@ class ActionDispatcher {
     try {
       await _executeAction(context, btn.id, btn.action);
     } catch (e) {
-      debugPrint('ActionDispatcher error for ${btn.id}: $e');
+      debugPrint('WFLActionDispatcher error for ${btn.id}: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -264,7 +264,7 @@ class ActionDispatcher {
 /// Grid of action buttons
 class ActionButtonGrid extends StatelessWidget {
   final List<TaskButtonDef> buttons;
-  final ActionDispatcher dispatcher;
+  final WFLActionDispatcher dispatcher;
   final int crossAxisCount;
   final double spacing;
   final double childAspectRatio;
@@ -310,7 +310,7 @@ class ActionButtonGrid extends StatelessWidget {
 
 class ActionButton extends StatelessWidget {
   final TaskButtonDef def;
-  final ActionDispatcher dispatcher;
+  final WFLActionDispatcher dispatcher;
 
   const ActionButton({
     super.key,
