@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "ms-vscode-remote.remote-ssh",
+    "dart-code.dart-code",
+    "dart-code.flutter"
+  ],
+  "unwantedRecommendations": []
+}
+

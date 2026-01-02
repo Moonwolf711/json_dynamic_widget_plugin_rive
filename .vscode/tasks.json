@@ -1,0 +1,127 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "flutter: analyze",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["analyze"],
+      "problemMatcher": ["$dart-analyze"],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "flutter: format",
+      "type": "shell",
+      "command": "dart",
+      "args": ["format", "."],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "flutter: test",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["test"],
+      "problemMatcher": ["$dart-test"],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "flutter: build windows",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["build", "windows", "--release"],
+      "problemMatcher": ["$dart-build"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "flutter: build apk",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["build", "apk", "--release"],
+      "problemMatcher": ["$dart-build"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "devtools: start headless",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/devtools_enhanced.ps1"
+      ],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "devtools: stop",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/stop_devtools.ps1"
+      ],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "clean: flutter",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["clean"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "clean: pub get",
+      "type": "shell",
+      "command": "flutter",
+      "args": ["pub", "get"],
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}
+

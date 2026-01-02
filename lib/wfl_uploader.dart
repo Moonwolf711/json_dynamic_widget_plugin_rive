@@ -1,12 +1,17 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:googleapis/youtube/v3.dart';
 import 'package:googleapis_auth/auth_io.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+
+// Conditional import for Google Sign-In (not supported on Windows desktop)
+import 'wfl_google_sign_in_stub.dart'
+    if (dart.library.html) 'package:google_sign_in/google_sign_in.dart'
+    if (dart.library.io) 'wfl_google_sign_in_stub.dart';
 
 /// WFL One-Click Upload - YouTube + Share Sheet
 /// Zero backend, zero API rotation, works offline
@@ -14,31 +19,89 @@ class WFLUploader {
   static YouTubeApi? _youtubeApi;
   static int _roastCount = 0;
   static bool _isConnected = false;
+  static dynamic _currentUser;
+  static StreamSubscription? _authSubscription;
 
   /// YouTube scopes needed
   static final _scopes = [YouTubeApi.youtubeUploadScope];
 
-  /// Google Sign-In for YouTube
-  static final _googleSignIn = GoogleSignIn(scopes: _scopes);
+  /// Check if Google Sign-In is supported on this platform
+  static bool get _isGoogleSignInSupported => !Platform.isWindows && !Platform.isLinux;
+
+  static dynamic _googleSignIn;
+  static bool _initialized = false;
 
   /// Check if YouTube is connected
   static bool get isYouTubeConnected => _isConnected;
 
+  /// Check if YouTube upload is available on this platform
+  static bool get isYouTubeAvailable => _isGoogleSignInSupported;
+
+  /// Ensure GoogleSignIn is initialized (required in v7)
+  static Future<void> _ensureInitialized() async {
+    if (!_initialized) {
+      // Skip initialization on unsupported platforms
+      if (!_isGoogleSignInSupported) {
+        debugPrint('Google Sign-In not supported on this platform (Windows/Linux)');
+        _initialized = true;
+        return;
+      }
+
+      _googleSignIn = GoogleSignIn.instance;
+      await _googleSignIn.initialize();
+
+      // Listen to authentication events
+      _authSubscription = _googleSignIn.authenticationEvents.listen(
+        (event) {
+          if (event is GoogleSignInAuthenticationEventSignIn) {
+            _currentUser = event.user;
+            _isConnected = true;
+          } else if (event is GoogleSignInAuthenticationEventSignOut) {
+            _currentUser = null;
+            _isConnected = false;
+            _youtubeApi = null;
+          }
+        },
+        onError: (error) {
+          debugPrint('Google Sign-In error: $error');
+        },
+      );
+
+      _initialized = true;
+    }
+  }
+
   /// Connect YouTube - first run popup, then cached forever
   static Future<bool> connectYouTube() async {
+    // Not available on Windows/Linux desktop
+    if (!_isGoogleSignInSupported) {
+      debugPrint('YouTube upload not available on Windows/Linux. Use share sheet instead.');
+      return false;
+    }
+
     try {
-      // Check if already signed in silently
-      var account = await _googleSignIn.signInSilently();
-      account ??= await _googleSignIn.signIn();
+      await _ensureInitialized();
 
-      if (account == null) return false;
+      // Try lightweight auth first
+      _googleSignIn.attemptLightweightAuthentication();
 
-      final auth = await account.authentication;
+      // If no user yet, do full authentication
+      if (_currentUser == null && _googleSignIn.supportsAuthenticate()) {
+        await _googleSignIn.authenticate();
+      }
+
+      if (_currentUser == null) return false;
+
+      // Get authorization for YouTube scopes
+      final authorization = await _currentUser.authorizationClient
+          .authorizeScopes(_scopes);
+
+      final accessToken = authorization.accessToken;
       final client = authenticatedClient(
         http.Client(),
         AccessCredentials(
-          AccessToken('Bearer', auth.accessToken!, DateTime.now().add(Duration(hours: 1))),
-          auth.idToken,
+          AccessToken('Bearer', accessToken, DateTime.now().add(Duration(hours: 1))),
+          null,
           _scopes,
         ),
       );
@@ -54,20 +117,34 @@ class WFLUploader {
 
   /// Disconnect YouTube - clears login
   static Future<void> disconnectYouTube() async {
+    if (!_isGoogleSignInSupported || _googleSignIn == null) return;
+
     await _googleSignIn.signOut();
+    _currentUser = null;
     _youtubeApi = null;
     _isConnected = false;
   }
 
   /// Initialize - check if already logged in
   static Future<void> init() async {
-    final account = await _googleSignIn.signInSilently();
-    _isConnected = account != null;
+    await _ensureInitialized();
+
+    // Try lightweight auth (only on supported platforms)
+    if (_isGoogleSignInSupported && _googleSignIn != null) {
+      _googleSignIn.attemptLightweightAuthentication();
+    }
+
     await _loadRoastCount();
   }
 
   /// Upload to YouTube - one tap, token saved forever
   static Future<String?> uploadToYouTube(File videoFile, {String? title, String? description}) async {
+    // Not available on Windows/Linux
+    if (!_isGoogleSignInSupported) {
+      debugPrint('YouTube upload not available on this platform');
+      return null;
+    }
+
     // Connect if not already
     if (!_isConnected) {
       final connected = await connectYouTube();
@@ -142,10 +219,12 @@ class WFLUploader {
     _roastCount++;
     final text = caption ?? 'Terry & Nigel just cooked this kid 🔥 #roast #comedy';
 
-    await Share.shareXFiles(
-      [XFile(videoFile.path)],
-      text: text,
-      subject: 'WFL Roast #$_roastCount',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(videoFile.path)],
+        text: text,
+        subject: 'WFL Roast #$_roastCount',
+      ),
     );
   }
 

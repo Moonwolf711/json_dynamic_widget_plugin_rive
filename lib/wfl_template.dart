@@ -4,13 +4,14 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:rive/rive.dart';
+// import 'package:rive/rive.dart'; // RIVE DISABLED
+import 'rive_stub.dart';
 import 'package:http/http.dart' as http;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Rive before using it
-  await RiveNative.init();
+  // Rive init disabled - using custom bone animation
+  // await RiveNative.init();
   runApp(const WFLApp());
 }
 

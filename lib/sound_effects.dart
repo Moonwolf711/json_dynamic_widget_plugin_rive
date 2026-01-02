@@ -1,13 +1,19 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
 /// Sound Effects Manager for WFL Show Mode
 /// Plays comedy sound effects after jokes and reactions
+/// NOTE: audioplayers has a threading bug on Windows that causes crashes.
+/// Background music and sound effects are disabled on Windows for stability.
 class SoundEffects {
   static final SoundEffects _instance = SoundEffects._internal();
   factory SoundEffects() => _instance;
   SoundEffects._internal();
+
+  // Check if we're on Windows - audioplayers crashes on Windows due to threading bug
+  static final bool _isWindows = Platform.isWindows;
 
   final AudioPlayer _player = AudioPlayer();
   final AudioPlayer _bgPlayer = AudioPlayer();  // Dedicated background music player
@@ -69,6 +75,11 @@ class SoundEffects {
 
   /// Start background music (plays random track, loops)
   Future<void> startBackgroundMusic() async {
+    // Skip on Windows due to audioplayers threading bug
+    if (_isWindows) {
+      debugPrint('SoundEffects: Background music disabled on Windows (audioplayers threading bug)');
+      return;
+    }
     if (_bgPlaying) return;  // Already playing
 
     try {
@@ -114,6 +125,8 @@ class SoundEffects {
 
   /// Play a specific sound effect
   Future<void> play(String effect) async {
+    // Skip on Windows due to audioplayers threading bug
+    if (_isWindows) return;
     if (!_enabled) return;
 
     final path = _effectPaths[effect];

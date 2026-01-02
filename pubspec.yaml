@@ -10,14 +10,14 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Rive animation (0.13+ for Data Binding API)
-  rive: ^0.13.20
+  # Rive animation (0.13.x - works with our API)
+  rive: ^0.14.0
 
   # HTTP for API calls
   http: ^1.1.0
 
   # Audio playback
-  audioplayers: ^5.2.0
+  audioplayers: ^6.5.1
 
   # Simple animations for organic character motion
   simple_animations: ^5.0.2
@@ -29,38 +29,45 @@ dependencies:
   ffmpeg_kit_flutter: ^6.0.0
 
   # File picking
-  file_picker: ^6.1.1
+  file_picker: ^10.3.8
 
   # Path utilities
   path_provider: ^2.1.0
 
   # YouTube upload
-  googleapis: ^13.0.0
+  googleapis: ^15.0.0
   googleapis_auth: ^2.0.0
-  google_sign_in: ^6.2.0
+  google_sign_in: ^7.2.0
 
   # Share sheet for TikTok/Reels/Shorts
-  share_plus: ^7.2.0
+  share_plus: ^12.0.1
   url_launcher: ^6.3.2
 
-  # Live mic recording (disabled for Windows build)
-  # record: ^5.0.0
-  # permission_handler: ^11.0.0
+  # === DISABLED FOR WINDOWS BUILD ===
+  # These packages require native platform support not available on Windows:
+  # record: ^5.0.0             # Live mic recording
+  # permission_handler: ^11.0.0 # Runtime permissions
   url_launcher_windows: ^3.1.4
 
   # WebSocket for server control
-  web_socket_channel: ^2.4.0
+  web_socket_channel: ^3.0.0
+
+  # Flutter AI Toolkit - Gemini chat integration
+  flutter_ai_toolkit: ^1.0.0
+  firebase_core: ^4.3.0
+  firebase_ai: ^3.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/wfl.riv  # compiled export from Rive (.rivo is source, .riv is binary)
+    - assets/skeletons/  # Custom bone animation skeletons
     - assets/path_effects/  # Custom Lua path effects
     - assets/backgrounds/
     - assets/characters/

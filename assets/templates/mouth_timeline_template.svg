@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Single-File SVG Timeline Template for 60fps Lip-Sync Animation
+  
+  USAGE:
+  1. Replace PUT_YOUR_BASE_PATHS_HERE with your actual SVG path d values
+  2. Replace TIMELINE_JSON_HERE with your frame timeline JSON
+  3. Replace VISEME_PATHS_HERE with your viseme-to-path mapping
+  
+  RENDERING:
+  - Open in browser: file:///path/to/mouth_timeline.svg?frame=0
+  - Auto-play preview: file:///path/to/mouth_timeline.svg?autoplay=true
+  - Export frames: Use Puppeteer, Playwright, or ffmpeg with browser capture
+  - Frame-by-frame: Call window.setCurrentFrame(n) from console
+  
+  TIMELINE JSON FORMAT:
+  {
+    "clip": "000_nigel",
+    "fps": 60,
+    "mode": "viseme",
+    "frames": [
+      {"f": 0, "t": 0.0, "v": "neutral"},
+      {"f": 1, "t": 0.016667, "v": "neutral"},
+      {"f": 2, "t": 0.033333, "v": "M"}
+    ]
+  }
+-->
+<svg xmlns="http://www.w3.org/2000/svg" 
+     width="400" 
+     height="300" 
+     viewBox="0 0 400 300"
+     id="mouth-timeline-svg">
+  
+  <defs>
+    <!-- Customize gradients and styles here -->
+    <linearGradient id="mouthGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#654321;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Mouth container - centered at (200, 150) -->
+  <g id="mouth-container" transform="translate(200, 150)">
+    
+    <!-- Main mouth shape - path d will be updated by JavaScript -->
+    <path id="mouth-shape"
+          d="PUT_YOUR_BASE_PATHS_HERE"
+          fill="url(#mouthGradient)"
+          stroke="#654321"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    
+    <!-- Inner mouth (dark area) -->
+    <path id="mouth-inner"
+          d="PUT_YOUR_BASE_PATHS_HERE"
+          fill="#000000"
+          opacity="0.6"/>
+    
+    <!-- Teeth layer (shown for F/V visemes) -->
+    <g id="teeth-layer" opacity="0">
+      <rect x="-30" y="-20" width="60" height="20" fill="#FFFFFF" opacity="0.9" rx="2"/>
+    </g>
+    
+    <!-- Tongue layer (shown for L/TH visemes) -->
+    <g id="tongue-layer" opacity="0">
+      <ellipse cx="0" cy="20" rx="30" ry="20" fill="#FF6B6B" opacity="0.8"/>
+    </g>
+    
+  </g>
+  
+  <!-- Timeline data embedded as JSON -->
+  <script id="timeline" type="application/json">
+TIMELINE_JSON_HERE
+  </script>
+  
+  <!-- Animation controller JavaScript -->
+  <script type="text/javascript">
+    <![CDATA[
+      (function() {
+        'use strict';
+        
+        // Parse timeline from embedded JSON
+        const timelineScript = document.getElementById('timeline');
+        if (!timelineScript) {
+          console.error('Timeline script not found!');
+          return;
+        }
+        
+        const timeline = JSON.parse(timelineScript.textContent);
+        const fps = timeline.fps || 60;
+        
+        // Viseme path mapping - maps viseme names to SVG path data
+        // Replace VISEME_PATHS_HERE with your actual paths
+        const visemePaths = VISEME_PATHS_HERE;
+        
+        // Get SVG elements
+        const mouthShape = document.getElementById('mouth-shape');
+        const mouthInner = document.getElementById('mouth-inner');
+        const teethLayer = document.getElementById('teeth-layer');
+        const tongueLayer = document.getElementById('tongue-layer');
+        
+        // Current frame (can be set via URL param: ?frame=42)
+        let currentFrame = 0;
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('frame')) {
+          currentFrame = Math.max(0, Math.min(
+            parseInt(urlParams.get('frame'), 10),
+            timeline.frames.length - 1
+          ));
+        }
+        
+        /**
+         * Update mouth shape based on frame number
+         * @param {number} frameNum - Frame index (0-based)
+         */
+        function updateFrame(frameNum) {
+          if (!timeline.frames || frameNum < 0 || frameNum >= timeline.frames.length) {
+            console.warn(`Frame ${frameNum} out of range (0-${timeline.frames.length - 1})`);
+            return;
+          }
+          
+          const frame = timeline.frames[frameNum];
+          const viseme = frame.v;
+          const pathData = visemePaths[viseme] || visemePaths['neutral'] || visemePaths[Object.keys(visemePaths)[0]];
+          
+          if (!pathData) {
+            console.error(`No path data for viseme: ${viseme}`);
+            return;
+          }
+          
+          // Update main mouth path
+          if (mouthShape && pathData.mouth) {
+            mouthShape.setAttribute('d', pathData.mouth);
+          }
+          
+          // Update inner mouth path
+          if (mouthInner && pathData.inner) {
+            mouthInner.setAttribute('d', pathData.inner);
+          }
+          
+          // Update layer visibility
+          if (teethLayer !== null) {
+            teethLayer.setAttribute('opacity', pathData.teeth_opacity || 0);
+          }
+          if (tongueLayer !== null) {
+            tongueLayer.setAttribute('opacity', pathData.tongue_opacity || 0);
+          }
+          
+          // Update current frame tracker
+          currentFrame = frameNum;
+        }
+        
+        // Initialize with current frame
+        updateFrame(currentFrame);
+        
+        // Export functions for external control
+        window.updateMouthFrame = updateFrame;
+        window.getTimeline = function() { return timeline; };
+        window.getCurrentFrame = function() { return currentFrame; };
+        window.setCurrentFrame = function(f) { 
+          updateFrame(Math.max(0, Math.min(f, timeline.frames.length - 1)));
+        };
+        window.getTotalFrames = function() { return timeline.frames.length; };
+        window.getFPS = function() { return fps; };
+        
+        // Auto-play animation (enable with ?autoplay=true)
+        if (urlParams.has('autoplay')) {
+          let frame = currentFrame;
+          const interval = setInterval(function() {
+            updateFrame(frame);
+            frame++;
+            if (frame >= timeline.frames.length) {
+              clearInterval(interval);
+              console.log('Animation complete');
+            }
+          }, 1000 / fps);
+          
+          // Store interval ID for potential cleanup
+          window.animationInterval = interval;
+        }
+        
+        console.log(`SVG Timeline loaded: ${timeline.frames.length} frames @ ${fps}fps`);
+        console.log(`Use window.setCurrentFrame(n) to jump to frame n`);
+        console.log(`Use ?frame=n in URL to start at specific frame`);
+        console.log(`Use ?autoplay=true to auto-play animation`);
+      })();
+    ]]>
+  </script>
+</svg>
+

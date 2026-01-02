@@ -9,7 +9,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:simple_animations/simple_animations.dart';
 import 'package:video_player/video_player.dart';
 // file_picker removed - using drag-and-drop instead
-import 'package:rive/rive.dart' hide LinearGradient, Image;
+// RIVE DISABLED: Using custom bone animation to avoid Windows path length issues
+// import 'package:rive/rive.dart' hide LinearGradient, Image;
+import 'rive_stub.dart'; // Stub classes when Rive is disabled
 import 'package:path_provider/path_provider.dart';
 // Stubbed for Windows build - mic recording not supported
 import 'record_stub.dart';
@@ -22,6 +24,11 @@ import 'wfl_websocket.dart';
 import 'wfl_image_resizer.dart';
 import 'wfl_animations.dart';
 import 'sound_effects.dart';
+import 'bone_animation.dart';
+import 'wfl_ai_chat.dart';
+import 'wfl_ai_chat_dev.dart';
+import 'dev_commands.dart';
+import 'wfl_layer_manager.dart';
 
 /// Rive input names - enum prevents typos that freeze the mouth forever
 /// (Legacy - kept for backwards compatibility with old .riv files)
@@ -43,11 +50,10 @@ class WFLAnimator extends StatefulWidget {
   State<WFLAnimator> createState() => _WFLAnimatorState();
 }
 
-class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin {
+class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin implements DevCommandExecutor {
   // Baked static images - loaded once, never again
   late final Image _spaceship;
-  late final Image _terryBody;
-  late final Image _nigelBody;
+  // Body images removed - using bone animation system instead
   late final Image _table;
   late final Image _buttonsPanel;
 
@@ -58,6 +64,15 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   StateMachineController? _terryStateMachine;
   StateMachineController? _nigelStateMachine;
   bool _riveLoaded = false;
+
+  // Custom bone animation - alternative to Rive
+  Skeleton? _terrySkeleton;
+  Skeleton? _nigelSkeleton;
+  bool _skeletonsLoaded = false;
+  String _terryAnimation = 'idle';
+  String _nigelAnimation = 'idle';
+  final GlobalKey<BoneAnimatorWidgetState> _terryBoneKey = GlobalKey();
+  final GlobalKey<BoneAnimatorWidgetState> _nigelBoneKey = GlobalKey();
 
   // Audio player for voice lines
   final AudioPlayer _voicePlayer = AudioPlayer();
@@ -83,7 +98,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   // Rive controller for cockpit (legacy)
   StateMachineController? _riveController;
   SMINumber? _buttonState;
-  SMIInput<String>? _btnTarget;
+  // Note: String inputs don't exist in Rive state machines - removed _btnTarget
   SMIBool? _isTalking;
 
   // Data Binding controllers (new API)
@@ -325,9 +340,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
     // Bake all static images ONCE
     _spaceship = Image.asset('assets/backgrounds/spaceship_iso.png');
-    // Use transparent full-body character images (for seated behind table)
-    _terryBody = Image.asset('assets/characters/terry/terry sitting transp/Terry, transparent background.PNG');
-    _nigelBody = Image.asset('assets/characters/nigel/nigel transparent/TRANSPARENT NIGEL.PNG');
+    // Body images removed - using bone animation system with layers
     _table = Image.asset('assets/backgrounds/table.png');
     _buttonsPanel = Image.asset('assets/backgrounds/buttons_panel.png');
 
@@ -370,6 +383,9 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     // Load Rive bone animations for characters
     _loadRiveAnimations();
 
+    // Also load custom skeletons (fallback when Rive doesn't work)
+    _loadSkeletons();
+
     // Start background music on app open (dating show vibe!)
     SoundEffects().startBackgroundMusic();
 
@@ -401,7 +417,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       Artboard? mainArtboard;
       try {
         mainArtboard = file.mainArtboard;
-        debugPrint('Rive file loaded. Main artboard: ${mainArtboard.name}');
+        debugPrint('Rive file loaded. Main artboard: ${mainArtboard?.name}');
       } catch (e) {
         debugPrint('Rive file has no main artboard: $e');
         // File loaded but no usable artboards - fall back to PNG
@@ -490,6 +506,39 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     }
   }
 
+  /// Load custom bone animation skeletons from JSON
+  Future<void> _loadSkeletons() async {
+    try {
+      // Load Terry skeleton
+      _terrySkeleton = await loadSkeleton('assets/skeletons/terry_skeleton.json');
+      debugPrint('Terry skeleton loaded: ${_terrySkeleton!.bones.length} bones, ${_terrySkeleton!.animations.length} animations');
+
+      // Load Nigel skeleton
+      _nigelSkeleton = await loadSkeleton('assets/skeletons/nigel_skeleton.json');
+      debugPrint('Nigel skeleton loaded: ${_nigelSkeleton!.bones.length} bones, ${_nigelSkeleton!.animations.length} animations');
+
+      setState(() => _skeletonsLoaded = true);
+      debugPrint('Custom bone animation skeletons loaded successfully');
+    } catch (e, stack) {
+      debugPrint('Skeleton loading failed: $e');
+      debugPrint('Stack: $stack');
+      // PNG fallback still works
+    }
+  }
+
+  /// Set character animation for bone system
+  void _setBoneAnimation(String character, String animation) {
+    setState(() {
+      if (character == 'terry') {
+        _terryAnimation = animation;
+        _terryBoneKey.currentState?.playAnimation(animation);
+      } else {
+        _nigelAnimation = animation;
+        _nigelBoneKey.currentState?.playAnimation(animation);
+      }
+    });
+  }
+
   /// Handle commands from WFL server
   void _handleServerCommand(String command, Map<String, dynamic> payload) {
     switch (command) {
@@ -568,7 +617,166 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       case 'play':
         // Trigger default animation or track
         break;
+
+      case 'refresh_character':
+        // Hot-reload all assets for a character (from designer wizard)
+        final character = payload['character'] as String?;
+        if (character != null) {
+          _reloadCharacterAssets(character);
+        }
+        break;
+
+      case 'asset_uploaded':
+        // Hot-reload single asset (from designer upload)
+        final character = payload['character'] as String?;
+        final layer = payload['layer'] as String?;
+        final asset = payload['asset'] as String?;
+        final path = payload['path'] as String?;
+        if (character != null && layer != null && asset != null) {
+          _hotReloadAsset(character, layer, asset, path);
+        }
+        break;
+
+      case 'preview_asset':
+        // Preview specific asset in viewer
+        final character = payload['character'] as String?;
+        final layer = payload['layer'] as String?;
+        final asset = payload['asset'] as String?;
+        final path = payload['path'] as String?;
+        if (character != null && asset != null) {
+          _previewAsset(character, layer ?? 'mouth_shapes', asset, path);
+        }
+        break;
     }
+  }
+
+  /// Reload all assets for a character (skeleton + images)
+  Future<void> _reloadCharacterAssets(String character) async {
+    debugPrint('Hot-reload: Refreshing all assets for $character');
+
+    // Clear image cache for this character's assets
+    _evictCharacterImages(character);
+
+    // Reload skeleton
+    try {
+      final skeleton = await loadSkeleton('assets/skeletons/${character}_skeleton.json');
+      setState(() {
+        if (character == 'terry') {
+          _terrySkeleton = skeleton;
+        } else if (character == 'nigel') {
+          _nigelSkeleton = skeleton;
+        }
+        _skeletonsLoaded = true;
+      });
+      debugPrint('Hot-reload: $character skeleton reloaded (${skeleton.bones.length} bones)');
+    } catch (e) {
+      debugPrint('Hot-reload: Failed to reload $character skeleton: $e');
+    }
+
+    // Notify uploader that refresh is complete
+    _wsClient.sendPreviewReady('all', character);
+  }
+
+  /// Hot-reload a single asset (evict from cache and refresh UI)
+  void _hotReloadAsset(String character, String layer, String asset, String? path) {
+    debugPrint('Hot-reload: $character/$layer/$asset');
+
+    // Build the asset path to evict
+    final assetPath = 'assets/characters/$character/$layer/$asset.png';
+
+    // Evict from image cache
+    final key = AssetImage(assetPath);
+    imageCache.evict(key);
+    debugPrint('Hot-reload: Evicted $assetPath from cache');
+
+    // If it's a mouth shape, update the current mouth to show it
+    if (layer == 'mouth_shapes') {
+      final mouthName = asset.replaceAll('.png', '').replaceAll('.svg', '');
+      setState(() {
+        if (character == 'terry') {
+          _terryMouth = mouthName;
+        } else if (character == 'nigel') {
+          _nigelMouth = mouthName;
+        }
+      });
+      debugPrint('Hot-reload: Set $character mouth to $mouthName');
+    }
+
+    // Force UI refresh
+    setState(() {});
+
+    // Notify uploader that asset is loaded
+    _wsClient.sendAssetLoaded(character, layer, asset);
+  }
+
+  /// Preview a specific asset (set it as active and show in viewer)
+  void _previewAsset(String character, String layer, String asset, String? path) {
+    debugPrint('Preview: $character/$layer/$asset');
+
+    // Evict any cached version first
+    final assetPath = 'assets/characters/$character/$layer/$asset.png';
+    imageCache.evict(AssetImage(assetPath));
+
+    // Set the appropriate state based on layer type
+    setState(() {
+      if (layer == 'mouth_shapes') {
+        // Show this mouth shape
+        final mouthName = asset.replaceAll('.png', '').replaceAll('.svg', '');
+        if (character == 'terry') {
+          _terryMouth = mouthName;
+        } else {
+          _nigelMouth = mouthName;
+        }
+      } else if (layer == 'eyes') {
+        // Show this eye state
+        final eyeState = asset.replaceAll('eyes_', '').replaceAll('.png', '');
+        if (character == 'terry') {
+          _terryBlinkState = eyeState;
+        } else {
+          _nigelBlinkState = eyeState;
+        }
+      }
+    });
+
+    // Notify uploader that preview is showing
+    _wsClient.sendPreviewReady(asset, character);
+  }
+
+  /// Evict all cached images for a character
+  void _evictCharacterImages(String character) {
+    // Common image paths for WFL characters
+    final paths = [
+      // Mouth shapes
+      'assets/characters/$character/mouth_shapes/a.png',
+      'assets/characters/$character/mouth_shapes/e.png',
+      'assets/characters/$character/mouth_shapes/f.png',
+      'assets/characters/$character/mouth_shapes/i.png',
+      'assets/characters/$character/mouth_shapes/l.png',
+      'assets/characters/$character/mouth_shapes/m.png',
+      'assets/characters/$character/mouth_shapes/o.png',
+      'assets/characters/$character/mouth_shapes/u.png',
+      'assets/characters/$character/mouth_shapes/x.png',
+      'assets/characters/$character/mouth_shapes/rest.png',
+      'assets/characters/$character/mouth_shapes/smirk.png',
+      // Eyes
+      'assets/characters/$character/eyes/eyes_open.png',
+      'assets/characters/$character/eyes/eyes_closed.png',
+      'assets/characters/$character/eyes/eyes_half.png',
+      'assets/characters/$character/eyes/eyes_squint.png',
+      'assets/characters/$character/eyes/eyes_wide.png',
+    ];
+
+    // Also evict numbered layers (terry has 20, nigel has 15)
+    for (int i = 0; i <= 25; i++) {
+      paths.add('assets/characters/$character/layers/layer_$i.png');
+      paths.add('assets/characters/$character/layers/${i.toString().padLeft(2, '0')}.png');
+    }
+
+    // Evict each path from cache
+    for (final path in paths) {
+      imageCache.evict(AssetImage(path));
+    }
+    debugPrint('Hot-reload: Evicted ${paths.length} cached images for $character');
   }
 
   void _onFocusChange() {
@@ -576,6 +784,54 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   /// Start blink timer - random blinks every 2-5 seconds
+  /// Manually trigger a single blink animation
+  void _triggerBlink(String character) {
+    setState(() {
+      if (character == 'terry') {
+        _terryBlinkState = 'half';
+      } else if (character == 'nigel') {
+        _nigelBlinkState = 'half';
+      }
+    });
+
+    // Blink sequence: half -> closed -> half -> open
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (mounted) {
+        setState(() {
+          if (character == 'terry') {
+            _terryBlinkState = 'closed';
+          } else if (character == 'nigel') {
+            _nigelBlinkState = 'closed';
+          }
+        });
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          if (character == 'terry') {
+            _terryBlinkState = 'half';
+          } else if (character == 'nigel') {
+            _nigelBlinkState = 'half';
+          }
+        });
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() {
+          if (character == 'terry') {
+            _terryBlinkState = 'open';
+          } else if (character == 'nigel') {
+            _nigelBlinkState = 'open';
+          }
+        });
+      }
+    });
+  }
+
   /// All other animation (breathing, sway, headBob, lean) handled by MirrorAnimationBuilder
   void _startBlinkTimer() {
     _blinkTimer = Timer.periodic(const Duration(milliseconds: 2000 + 500), (_) {
@@ -714,6 +970,136 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     }
   }
 
+  // ============================================================================
+  // DEV COMMANDS EXECUTOR - Allows AI chat to control the show in real-time
+  // ============================================================================
+
+  @override
+  Future<CommandResult> animateCharacter(String character, String animation) async {
+    try {
+      setState(() {
+        if (character == 'terry') {
+          _terryAnimation = animation;
+          _terryBoneKey.currentState?.setAnimation(animation);
+        } else if (character == 'nigel') {
+          _nigelAnimation = animation;
+          _nigelBoneKey.currentState?.setAnimation(animation);
+        }
+      });
+      return CommandResult.success('✓ Animated $character: $animation');
+    } catch (e) {
+      return CommandResult.error('Failed to animate $character: $e');
+    }
+  }
+
+  @override
+  Future<CommandResult> setMouthShape(String character, String shape) async {
+    try {
+      setState(() {
+        if (character == 'terry') {
+          _terryMouth = shape;
+        } else if (character == 'nigel') {
+          _nigelMouth = shape;
+        }
+      });
+      return CommandResult.success('✓ Set $character mouth: $shape');
+    } catch (e) {
+      return CommandResult.error('Failed to set mouth shape: $e');
+    }
+  }
+
+  @override
+  Future<CommandResult> triggerBlink(String character) async {
+    try {
+      if (character == 'both') {
+        _triggerBlink('terry');
+        _triggerBlink('nigel');
+        return CommandResult.success('✓ Both characters blinked');
+      } else {
+        _triggerBlink(character);
+        return CommandResult.success('✓ $character blinked');
+      }
+    } catch (e) {
+      return CommandResult.error('Failed to trigger blink: $e');
+    }
+  }
+
+  @override
+  Future<CommandResult> playSFX(String sfxName) async {
+    try {
+      await SoundEffects().play(sfxName);
+      return CommandResult.success('✓ Played SFX: $sfxName');
+    } catch (e) {
+      return CommandResult.error('Failed to play SFX: $e');
+    }
+  }
+
+  @override
+  Future<CommandResult> setScale(String character, double scale) async {
+    // Scale requires widget tree rebuild - not yet implemented
+    // Would need to add _terryScale/_nigelScale state variables
+    return CommandResult.error(
+      'Character scaling not yet supported (requires widget tree changes)',
+    );
+  }
+
+  @override
+  Future<CommandResult> moveCharacter(String character, double x, double y) async {
+    // Character positions are fixed in the cockpit layout
+    // This would require architectural changes to support
+    return CommandResult.error(
+      'Character positioning not yet supported (fixed cockpit layout)',
+    );
+  }
+
+  @override
+  Future<CommandResult> addLayer(String character, String layerPath) async {
+    // Layer system integration - future feature
+    return CommandResult.error(
+      'Layer adding not yet supported - use Layer Manager UI',
+    );
+  }
+
+  @override
+  Future<CommandResult> executeCustomCode(String code) async {
+    // Security: Custom code execution disabled for safety
+    return CommandResult.error(
+      'Custom code execution disabled for security',
+    );
+  }
+
+  @override
+  List<String> getAvailableCommands() {
+    return [
+      'animate [terry|nigel] [idle|talking|blink|excited]',
+      'set [terry|nigel] mouth [a|e|i|o|u|x]',
+      'blink [terry|nigel|both]',
+      'play [sfx_name]',
+      'scale [terry|nigel] [size]',
+    ];
+  }
+
+  @override
+  Map<String, dynamic> getStateInfo() {
+    return {
+      'terry': {
+        'animation': _terryAnimation,
+        'mouth': _terryMouth,
+        'skeleton_loaded': _terrySkeleton != null,
+      },
+      'nigel': {
+        'animation': _nigelAnimation,
+        'mouth': _nigelMouth,
+        'skeleton_loaded': _nigelSkeleton != null,
+      },
+      'audio_playing': _voicePlayer.state == PlayerState.playing,
+    };
+  }
+
+  // ============================================================================
+  // END DEV COMMANDS
+  // ============================================================================
+
   @override
   void dispose() {
     // Note: No AnimationController to dispose - MirrorAnimationBuilder manages its own
@@ -734,9 +1120,9 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     _audioRecorder.dispose();
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
-    // Dispose Rive resources
-    _terryStateMachine?.dispose();
-    _nigelStateMachine?.dispose();
+    // Dispose Rive resources (StateMachineController doesn't have dispose in Rive 0.13.x)
+    _terryStateMachine = null;
+    _nigelStateMachine = null;
     _terryController?.dispose();
     _nigelController?.dispose();
     super.dispose();
@@ -903,7 +1289,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       _riveController = controller;
       // Use RiveInput enum - no typos, no frozen mouths (legacy)
       _buttonState = controller.findInput<double>(RiveInput.buttonState.name) as SMINumber?;
-      _btnTarget = controller.findInput<String>(RiveInput.btnTarget.name);
+      // Note: String inputs don't exist in Rive - btnTarget removed
       _isTalking = controller.findInput<bool>(RiveInput.isTalking.name) as SMIBool?;
     }
 
@@ -948,6 +1334,11 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       _terryController?.setTalking(talking);
     } else if (character == 'nigel') {
       _nigelController?.setTalking(talking);
+    }
+
+    // Also switch bone animation
+    if (_skeletonsLoaded) {
+      _setBoneAnimation(character, talking ? 'talking' : 'idle');
     }
   }
 
@@ -1522,7 +1913,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   void _setButtonState(String btn, int state) {
-    _btnTarget?.value = btn;
+    // Note: String inputs removed - btnTarget not available
     _buttonState?.value = state.toDouble();
     setState(() {});
   }
@@ -2001,12 +2392,19 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
                                       // Ship overlay (always on top) - IgnorePointer so characters can be dragged
                                       Positioned.fill(child: IgnorePointer(child: _buttonsPanel)),
                                       _buildPortholes(),
-                                      // Characters BEHIND the table (rendered first, table on top)
-                                      // Each component (body, eyes, mouth) has its own resize box
-                                      // Terry components
-                                      _buildCharacterWithComponents('terry', _terryBody, _terryMouth),
-                                      // Nigel components
-                                      _buildCharacterWithComponents('nigel', _nigelBody, _nigelMouth),
+                                      // Characters BEHIND the table - using bone animation system
+                                      // Terry - bone animation with layers
+                                      Positioned(
+                                        left: 50,
+                                        bottom: -50,
+                                        child: _buildCharacter('terry'),
+                                      ),
+                                      // Nigel - bone animation with layers
+                                      Positioned(
+                                        right: 50,
+                                        bottom: -50,
+                                        child: _buildCharacter('nigel'),
+                                      ),
                                       // Table IN FRONT of characters (talk show desk) - IgnorePointer for character drag
                                       Positioned(
                                         bottom: 0,
@@ -2271,6 +2669,24 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
               ),
             ),
           ),
+
+          const SizedBox(width: 8),
+
+          // AI Chat button - Multi-model comedy writer + dev console
+          TextButton.icon(
+            onPressed: () => WFLAIChatDevDialog.show(context, commandExecutor: this),
+            icon: const Icon(Icons.auto_awesome, size: 18, color: Colors.deepPurple),
+            label: const Text('AI Writer + Dev', style: TextStyle(color: Colors.deepPurple)),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Layer Manager button
+          TextButton.icon(
+            onPressed: _showLayerManager,
+            icon: const Icon(Icons.layers, size: 18, color: Colors.teal),
+            label: const Text('Layers', style: TextStyle(color: Colors.teal)),
+          ),
         ],
       ),
     );
@@ -2439,6 +2855,23 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         thumbnail: thumbnail,
       ));
     });
+  }
+
+  /// Show layer manager dialog
+  void _showLayerManager() async {
+    // Use absolute paths for Windows
+    const basePath = r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer';
+    WFLLayerManager.show(
+      context,
+      terrySkeletonPath: r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\skeletons\terry_skeleton.json',
+      nigelSkeletonPath: r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\skeletons\nigel_skeleton.json',
+      terryAssetsPath: r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\characters\terry',
+      nigelAssetsPath: r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\characters\nigel',
+      onLayersChanged: () {
+        // Reload skeletons when layers change
+        _loadSkeletons();
+      },
+    );
   }
 
   /// Save preset dialog
@@ -3129,10 +3562,10 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     // Select the appropriate MovieTween for this character
     final idleTween = name == 'terry' ? terryIdleTween : nigelIdleTween;
 
-    // Base positions
-    final baseLeft = name == 'terry' ? 80.0 : null;
-    final baseRight = name == 'terry' ? null : 80.0;
-    const baseBottom = 60.0;
+    // Base positions - characters sit behind table (table is at bottom: 0)
+    final baseLeft = name == 'terry' ? 50.0 : null;
+    final baseRight = name == 'terry' ? null : 50.0;
+    const baseBottom = -100.0;  // Negative to push characters DOWN behind table
 
     // Component colors for resize boxes
     final bodyColor = name == 'terry' ? Colors.cyan : Colors.lightGreen;
@@ -3552,16 +3985,34 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildCharacter(String name, Image body, String mouth) {
+  Widget _buildCharacter(String name, [Image? body, String? mouth]) {
     final artboard = name == 'terry' ? _terryArtboard : _nigelArtboard;
+    final skeleton = name == 'terry' ? _terrySkeleton : _nigelSkeleton;
+    final mouthShape = mouth ?? (name == 'terry' ? _terryMouth : _nigelMouth);
 
-    // Use Rive bone animation if loaded
+    // Priority 1: Rive bone animation (if .riv file has valid artboards)
     if (_riveLoaded && artboard != null) {
       return _buildRiveCharacter(name, artboard);
     }
 
-    // Fallback to PNG images
-    return _buildPngCharacter(name, body, mouth);
+    // Priority 2: Custom bone animation system (if skeletons loaded)
+    if (_skeletonsLoaded && skeleton != null) {
+      return _buildBoneCharacter(name, skeleton);
+    }
+
+    // Priority 3: PNG fallback - show error placeholder since body images removed
+    return Container(
+      width: 300,
+      height: 400,
+      color: Colors.red.withOpacity(0.3),
+      child: Center(
+        child: Text(
+          '$name\nSkeleton not loaded',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+    );
   }
 
   /// Build character using Rive bone animation
@@ -3573,6 +4024,69 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         artboard: artboard,
         fit: BoxFit.contain,
         alignment: Alignment.bottomCenter,
+      ),
+    );
+  }
+
+  /// Build character using custom bone animation system
+  /// Wrapped in resizable component for drag/scale support
+  Widget _buildBoneCharacter(String name, Skeleton skeleton) {
+    final animation = name == 'terry' ? _terryAnimation : _nigelAnimation;
+    final key = name == 'terry' ? _terryBoneKey : _nigelBoneKey;
+    final basePath = 'assets/characters/$name';
+
+    // Get scale and offset for this character
+    final bodyScale = name == 'terry' ? _terryBodyScale : _nigelBodyScale;
+    final bodyOffset = name == 'terry' ? _terryBodyOffset : _nigelBodyOffset;
+    final bodyColor = name == 'terry' ? Colors.cyan : Colors.lightGreen;
+
+    return Transform.translate(
+      offset: bodyOffset,
+      child: _buildResizableComponent(
+        label: '${name.toUpperCase()} CHARACTER',
+        color: bodyColor,
+        scale: bodyScale,
+        onScaleUpdate: (scale) {
+          setState(() {
+            if (name == 'terry') {
+              _terryBodyScale = scale.clamp(_minScale, _maxScale);
+            } else {
+              _nigelBodyScale = scale.clamp(_minScale, _maxScale);
+            }
+          });
+        },
+        onDragUpdate: (delta) {
+          setState(() {
+            if (name == 'terry') {
+              _terryBodyOffset += delta;
+            } else {
+              _nigelBodyOffset += Offset(-delta.dx, delta.dy);
+            }
+          });
+        },
+        onReset: () {
+          setState(() {
+            if (name == 'terry') {
+              _terryBodyScale = _defaultScale;
+              _terryBodyOffset = Offset.zero;
+            } else {
+              _nigelBodyScale = _defaultScale;
+              _nigelBodyOffset = Offset.zero;
+            }
+          });
+        },
+        child: SizedBox(
+          width: skeleton.canvasSize.width * 0.6,
+          height: skeleton.canvasSize.height * 0.6,
+          child: BoneAnimatorWidget(
+            key: key,
+            skeleton: skeleton,
+            currentAnimation: animation,
+            assetBasePath: basePath,
+            scale: 0.6,
+            showBones: false,
+          ),
+        ),
       ),
     );
   }
@@ -4108,14 +4622,17 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     final cleanText = text.replaceAll(RegExp(r'\*+'), '');
 
     // Generate and play voice audio using ElevenLabs TTS
-    if (WFLConfig.autoRoastEnabled) {
+    debugPrint('TTS: ttsEnabled=${WFLConfig.ttsEnabled}, key=${WFLConfig.elevenLabsKey.substring(0, 8)}...');
+    if (WFLConfig.ttsEnabled) {
       try {
         final voiceId = speaker == 'terry'
             ? WFLConfig.terryVoiceId
             : WFLConfig.nigelVoiceId;
+        debugPrint('TTS: Generating for $speaker with voice $voiceId');
 
         // Generate speech audio (returns PCM 44100Hz 16-bit mono)
         final pcmBytes = await _autoRoast.generateSpeech(cleanText, voiceId, character: speaker);
+        debugPrint('TTS: Got ${pcmBytes.length} bytes');
 
         if (pcmBytes.isNotEmpty && mounted && _dialoguePlaying && !_dialoguePaused) {
           // Convert PCM to WAV by adding header
@@ -4135,8 +4652,13 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
             }
           });
 
-          // Play audio
-          await _voicePlayer.play(DeviceFileSource(audioFile.path));
+          // Play audio using Windows native player (bypass audioplayers bug)
+          final wavPath = audioFile.path.replaceAll('/', '\\');
+          debugPrint('TTS: Playing $wavPath');
+          Process.run('powershell', [
+            '-Command',
+            "(New-Object Media.SoundPlayer '$wavPath').PlaySync()",
+          ]);
 
           // Simple lip-sync animation while audio plays
           _animateLipSync(speaker, cleanText.length);

@@ -5,7 +5,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// WebSocket client for WFL Server communication
 class WFLWebSocket {
-  static const String _defaultUrl = 'ws://127.0.0.1:3000';
+  static const String _defaultUrl = 'ws://127.0.0.1:3002';
 
   WebSocketChannel? _channel;
   Timer? _pingTimer;
@@ -131,6 +131,27 @@ class WFLWebSocket {
       'type': 'status',
       'status': status,
       ...?extra,
+    });
+  }
+
+  /// Confirm preview is ready (sent after hot-reload completes)
+  void sendPreviewReady(String asset, [String? character]) {
+    send({
+      'type': 'preview_ready',
+      'asset': asset,
+      'character': character,
+      'status': 'ok',
+    });
+  }
+
+  /// Confirm asset was loaded
+  void sendAssetLoaded(String character, String layer, String asset) {
+    send({
+      'type': 'asset_loaded',
+      'character': character,
+      'layer': layer,
+      'asset': asset,
+      'status': 'ok',
     });
   }
 
