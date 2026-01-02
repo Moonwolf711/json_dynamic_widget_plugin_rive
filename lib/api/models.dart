@@ -1,4 +1,5 @@
 /// Data models for Flutter Viewer API
+library;
 
 class Project {
   final int id;

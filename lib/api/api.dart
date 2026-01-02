@@ -13,6 +13,7 @@
 /// // Configure API URL
 /// ApiConfig.setBaseUrl('http://your-server:8000');
 /// ```
+library;
 
 export 'api_config.dart';
 export 'api_service.dart';

@@ -1,10 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
 /// WFL Image Resizer - Visual tool for resizing Dragonbone images to Illustrator specs
 class WFLImageResizer extends StatefulWidget {

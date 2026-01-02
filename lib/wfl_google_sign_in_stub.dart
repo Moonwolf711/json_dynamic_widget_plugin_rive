@@ -1,6 +1,7 @@
 /// Stub for Google Sign-In on unsupported platforms (Windows/Linux desktop)
 /// The actual google_sign_in package doesn't work on Windows desktop,
 /// so we provide stub classes that gracefully fail.
+library;
 
 class GoogleSignIn {
   static final GoogleSignIn instance = GoogleSignIn._();

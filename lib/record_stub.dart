@@ -1,5 +1,6 @@
 /// Stub implementations for record and permission_handler packages
 /// Used when building for platforms that don't support these packages
+library;
 
 // Stub for AudioRecorder
 class AudioRecorder {

@@ -1,5 +1,6 @@
 /// Character Personality Prompts for WFL Show Mode
 /// Each character has a distinct voice and style for roasting/commentary
+library;
 
 class CharacterPrompts {
   /// Terry - The Australian Alien

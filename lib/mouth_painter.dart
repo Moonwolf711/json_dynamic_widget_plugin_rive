@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 /// SVG-style mouth viseme paths for lip-sync animation

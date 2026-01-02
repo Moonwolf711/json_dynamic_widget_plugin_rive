@@ -4,7 +4,7 @@
 /// - "animate terry talking" - Start talking animation
 /// - "set terry mouth a" - Change mouth shape
 /// - "blink nigel" - Trigger blink animation
-library dev_commands;
+library;
 
 import 'package:flutter/material.dart';
 

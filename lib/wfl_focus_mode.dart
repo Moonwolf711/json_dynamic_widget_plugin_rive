@@ -102,8 +102,9 @@ class _FullScreenBrollState extends State<FullScreenBroll>
       final char = text[_charIndex].toLowerCase();
       String mouth = 'x';
 
-      if ('aáà'.contains(char)) mouth = 'a';
-      else if ('eéè'.contains(char)) mouth = 'e';
+      if ('aáà'.contains(char)) {
+        mouth = 'a';
+      } else if ('eéè'.contains(char)) mouth = 'e';
       else if ('iíì'.contains(char)) mouth = 'i';
       else if ('oóò'.contains(char)) mouth = 'o';
       else if ('uúù'.contains(char)) mouth = 'u';

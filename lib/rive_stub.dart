@@ -1,5 +1,6 @@
 /// Rive stub classes for when Rive is disabled
 /// This allows the code to compile without the rive package
+library;
 
 import 'package:flutter/widgets.dart';
 
