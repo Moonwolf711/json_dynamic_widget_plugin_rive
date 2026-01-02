@@ -1,47 +1,44 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' show Random;
-import 'package:flutter/foundation.dart' show kReleaseMode;
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/gestures.dart';
+import 'dart:ui' as ui;
+
 import 'package:audioplayers/audioplayers.dart';
-import 'package:simple_animations/simple_animations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
+
+import 'bone_animation.dart';
+import 'dev_commands.dart';
+// Stubbed for Windows build - mic recording not supported
+import 'record_stub.dart';
 // file_picker removed - using drag-and-drop instead
 // RIVE DISABLED: Using custom bone animation to avoid Windows path length issues
 // import 'package:rive/rive.dart' hide LinearGradient, Image;
 import 'rive_stub.dart'; // Stub classes when Rive is disabled
-import 'package:path_provider/path_provider.dart';
-// Stubbed for Windows build - mic recording not supported
-import 'record_stub.dart';
-import 'wfl_controller.dart';
-import 'wfl_config.dart';
-import 'wfl_uploader.dart';
-import 'wfl_focus_mode.dart';
-import 'wfl_data_binding.dart';
-import 'wfl_websocket.dart';
-import 'wfl_image_resizer.dart';
-import 'wfl_animations.dart';
 import 'sound_effects.dart';
-import 'bone_animation.dart';
-import 'wfl_ai_chat.dart';
 import 'wfl_ai_chat_dev.dart';
-import 'dev_commands.dart';
+import 'wfl_config.dart';
+import 'wfl_controller.dart';
+import 'wfl_data_binding.dart';
+import 'wfl_focus_mode.dart';
+import 'wfl_image_resizer.dart';
 import 'wfl_layer_manager.dart';
-
-/// Rive input names - enum prevents typos that freeze the mouth forever
-/// (Legacy - kept for backwards compatibility with old .riv files)
-enum RiveInput {
-  isTalking('isTalking'),
-  lipShape('lipShape'),
-  windowAdded('windowAdded'),
-  buttonState('buttonState'),
-  btnTarget('btnTarget');
-
-  final String name;
-  const RiveInput(this.name);
-}
+import 'wfl_models.dart';
+import 'wfl_uploader.dart';
+import 'wfl_websocket.dart';
+import 'widgets/wfl_bottom_controls.dart';
+import 'widgets/wfl_character.dart';
+import 'widgets/wfl_hotkey_hints.dart';
+import 'widgets/wfl_play_pause_button.dart';
+import 'widgets/wfl_portholes.dart';
+import 'widgets/wfl_queue_panel.dart';
+import 'widgets/wfl_sfx_panel.dart';
+import 'widgets/wfl_subtitle_bar.dart';
+import 'widgets/wfl_top_bar.dart';
+import 'widgets/wfl_warp_hud.dart';
 
 class WFLAnimator extends StatefulWidget {
   const WFLAnimator({super.key});
@@ -50,7 +47,9 @@ class WFLAnimator extends StatefulWidget {
   State<WFLAnimator> createState() => _WFLAnimatorState();
 }
 
-class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin implements DevCommandExecutor {
+class _WFLAnimatorState extends State<WFLAnimator>
+    with TickerProviderStateMixin
+    implements DevCommandExecutor {
   // Baked static images - loaded once, never again
   late final Image _spaceship;
   // Body images removed - using bone animation system instead
@@ -108,6 +107,9 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   // Keyboard focus
   final FocusNode _focusNode = FocusNode();
 
+  // Capture key for recording
+  final GlobalKey _captureKey = GlobalKey();
+
   // Button hit regions (x, y, radius, name)
   static const List<ButtonHitRegion> _buttonHitRegions = [
     ButtonHitRegion(100, 120, 30, 'thrusters'),
@@ -139,7 +141,9 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   // Recording state
   bool _isRecording = false;
   int _recordingSeconds = 0;
+  int _frameCount = 0;
   Timer? _recordingTimer;
+  Timer? _frameTimer;
   final List<String> _capturedFrames = [];
 
   // ============ SIMPLE_ANIMATIONS IDLE SYSTEM ============
@@ -176,13 +180,13 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   double _terryEyeY = 0.0;
   double _nigelEyeX = 0.0;
   double _nigelEyeY = 0.0;
-  double _terryHeadBob = 0.0;
-  double _nigelHeadBob = 0.0;
-  double _terrySway = 0.0;
-  double _nigelSway = 0.0;
-  double _terryLean = 0.0;
-  double _nigelLean = 0.0;
-  double _breathOffset = 0.0;
+  final double _terryHeadBob = 0.0;
+  final double _nigelHeadBob = 0.0;
+  final double _terrySway = 0.0;
+  final double _nigelSway = 0.0;
+  final double _terryLean = 0.0;
+  final double _nigelLean = 0.0;
+  final double _breathOffset = 0.0;
 
   // Scale limits
   static const double _minScale = 0.3;
@@ -191,12 +195,12 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
   // Subtitle system
   String _subtitleText = '';
-  String _subtitleSpeaker = '';  // 'terry', 'nigel', or '' for narrator
+  String _subtitleSpeaker = ''; // 'terry', 'nigel', or '' for narrator
   bool _subtitleVisible = false;
   Timer? _subtitleTimer;
 
   // SFX Panel
-  bool _sfxPanelExpanded = true;  // Start expanded so user sees buttons
+  bool _sfxPanelExpanded = true; // Start expanded so user sees buttons
 
   // NOTE: HeadBob, Sway, Lean now handled by MirrorAnimationBuilder + MovieTween
   // See _buildCharacterWithComponents() and _buildPngCharacter() for usage
@@ -215,101 +219,52 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
   // Sample dialogue lines for demo
   static const List<Map<String, String>> _sampleDialogue = [
-    {'speaker': 'terry', 'text': 'Yo, welcome to **Wooking for Love**! I\'m Terry, your host with the most!'},
-    {'speaker': 'nigel', 'text': 'And I\'m Nigel. *Reluctantly* here to provide... commentary.'},
-    {'speaker': 'terry', 'text': 'Tonight we got some FIRE contestants lined up!'},
-    {'speaker': 'nigel', 'text': 'Indeed. Though I suspect the only thing *fire* will be my scathing observations.'},
+    {
+      'speaker': 'terry',
+      'text':
+          'Yo, welcome to **Wooking for Love**! I\'m Terry, your host with the most!'
+    },
+    {
+      'speaker': 'nigel',
+      'text': 'And I\'m Nigel. *Reluctantly* here to provide... commentary.'
+    },
+    {
+      'speaker': 'terry',
+      'text': 'Tonight we got some FIRE contestants lined up!'
+    },
+    {
+      'speaker': 'nigel',
+      'text':
+          'Indeed. Though I suspect the only thing *fire* will be my scathing observations.'
+    },
     {'speaker': 'terry', 'text': 'Bruh, you gotta chill! This is about LOVE!'},
     {'speaker': 'nigel', 'text': 'Love? In THIS economy? **Doubtful.**'},
-    {'speaker': 'terry', 'text': 'Aight let\'s bring out our first contestant!'},
+    {
+      'speaker': 'terry',
+      'text': 'Aight let\'s bring out our first contestant!'
+    },
     {'speaker': 'nigel', 'text': 'Brace yourselves. Here comes the *cringe*.'},
     {'speaker': 'terry', 'text': 'Yo that outfit is straight BUSSIN!'},
-    {'speaker': 'nigel', 'text': 'If by *bussin* you mean a fashion disaster, then yes.'},
+    {
+      'speaker': 'nigel',
+      'text': 'If by *bussin* you mean a fashion disaster, then yes.'
+    },
     {'speaker': 'terry', 'text': 'Nigel why you always gotta be so negative?'},
     {'speaker': 'nigel', 'text': 'I prefer the term **realistic**, Terry.'},
   ];
 
   // Reaction animations
-  String _terryReaction = 'neutral'; // neutral, laughing, shocked, facepalm, pointing, thinking
+  String _terryReaction =
+      'neutral'; // neutral, laughing, shocked, facepalm, pointing, thinking
   String _nigelReaction = 'neutral';
   Timer? _reactionTimer;
 
   // Character-specific facial feature positions
-  static const Map<String, Map<String, dynamic>> _characterConfig = {
-    'terry': {
-      'mouthX': 95.0,
-      'mouthY': 175.0,
-      'mouthWidth': 110.0,
-      'mouthHeight': 60.0,
-      'eyesX': 70.0,
-      'eyesY': 120.0,
-      'eyesWidth': 160.0,
-      'eyesHeight': 50.0,
-      'hasEyes': false, // Terry's eyes are built into layers
-    },
-    'nigel': {
-      'mouthX': 100.0,
-      'mouthY': 185.0,
-      'mouthWidth': 100.0,
-      'mouthHeight': 55.0,
-      'eyesX': 75.0,
-      'eyesY': 130.0,
-      'eyesWidth': 150.0,
-      'eyesHeight': 45.0,
-      'hasEyes': true, // Nigel has separate eye sprites
-      'mouthFullFrame': true, // Nigel's mouth shapes are full-frame 2368x1792 PNGs (already positioned)
-      'bodyAspectRatio': 1376.0 / 752.0, // actual body image aspect ratio (1.83:1 = wider than tall)
-    },
-  };
-
-  // Layer stacking order for each character (bottom to top)
-  // Based on Python compositor: nigel_compositor.py LAYER_ORDER
-  static const Map<String, List<String>> _layerOrder = {
-    'nigel': [
-      'layer_05', // Back arm left
-      'layer_06', // Back arm right
-      'layer_04', // Torso/jacket
-      'layer_02', // Head background
-      'layer_03', // Face
-      'layer_07', // Mid arms
-      'layer_08',
-      'layer_09', // Front arms
-      'layer_10',
-      'layer_11', // Hands
-      'layer_12',
-      'layer_13', // Legs
-      'layer_14',
-      'layer_15', // Robot arm
-      'layer_01', // Hat on top
-    ],
-    'terry': [
-      'layer_05', // Back elements
-      'layer_06',
-      'layer_04',
-      'layer_02',
-      'layer_03',
-      'layer_07',
-      'layer_08',
-      'layer_09',
-      'layer_10',
-      'layer_11',
-      'layer_12',
-      'layer_13',
-      'layer_14',
-      'layer_15',
-      'layer_16',
-      'layer_17',
-      'layer_18',
-      'layer_19',
-      'layer_20',
-      'layer_01', // Top layer
-    ],
-  };
 
   // WARP MODE - flying through video
   bool _isWarp = false;
   VideoPlayerController? _warpPlayer;
-  double _warpSpeed = 0.87; // c units
+  final double _warpSpeed = 0.87; // c units
 
   // FLYTHROUGH MODE - single video behind all 3 portholes as masks
   bool _flythroughMode = false;
@@ -384,7 +339,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     _loadRiveAnimations();
 
     // Also load custom skeletons (fallback when Rive doesn't work)
-    _loadSkeletons();
+    // DISABLED: Using PNG layer system with MirrorAnimationBuilder for now
+    // _loadSkeletons();
 
     // Start background music on app open (dating show vibe!)
     SoundEffects().startBackgroundMusic();
@@ -392,12 +348,14 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     // Demo subtitle sequence (shows subtitle system works)
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        showSubtitle('terry', "G'day legends! Welcome to **Wooking for Love**!");
+        showSubtitle(
+            'terry', "G'day legends! Welcome to **Wooking for Love**!");
       }
     });
     Future.delayed(const Duration(seconds: 6), () {
       if (mounted) {
-        showSubtitle('nigel', "Indeed. I must say, this is *quite* the peculiar situation.");
+        showSubtitle('nigel',
+            "Indeed. I must say, this is *quite* the peculiar situation.");
       }
     });
   }
@@ -429,8 +387,10 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       final terryArtboard = file.artboardByName('terry');
       final nigelArtboard = file.artboardByName('nigel');
 
-      debugPrint('Terry artboard: ${terryArtboard != null ? "found" : "not found"}');
-      debugPrint('Nigel artboard: ${nigelArtboard != null ? "found" : "not found"}');
+      debugPrint(
+          'Terry artboard: ${terryArtboard != null ? "found" : "not found"}');
+      debugPrint(
+          'Nigel artboard: ${nigelArtboard != null ? "found" : "not found"}');
 
       // Use character artboards if found, otherwise create instances of main artboard
       if (terryArtboard != null) {
@@ -456,14 +416,17 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       // Initialize state machines for bone animation control
       if (_terryArtboard != null) {
         // Try multiple state machine names
-        _terryStateMachine = StateMachineController.fromArtboard(_terryArtboard!, 'character')
-            ?? StateMachineController.fromArtboard(_terryArtboard!, 'cockpit')
-            ?? StateMachineController.fromArtboard(_terryArtboard!, 'talker')
-            ?? StateMachineController.fromArtboard(_terryArtboard!, 'State Machine 1');
+        _terryStateMachine = StateMachineController.fromArtboard(
+                _terryArtboard!, 'character') ??
+            StateMachineController.fromArtboard(_terryArtboard!, 'cockpit') ??
+            StateMachineController.fromArtboard(_terryArtboard!, 'talker') ??
+            StateMachineController.fromArtboard(
+                _terryArtboard!, 'State Machine 1');
 
         if (_terryStateMachine != null) {
           _terryArtboard!.addController(_terryStateMachine!);
-          debugPrint('Terry state machine: ${_terryStateMachine!.stateMachine.name}');
+          debugPrint(
+              'Terry state machine: ${_terryStateMachine!.stateMachine.name}');
           _terryController = WFLCharacterController(
             characterName: 'terry',
             artboard: _terryArtboard!,
@@ -475,14 +438,17 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       }
 
       if (_nigelArtboard != null) {
-        _nigelStateMachine = StateMachineController.fromArtboard(_nigelArtboard!, 'character')
-            ?? StateMachineController.fromArtboard(_nigelArtboard!, 'cockpit')
-            ?? StateMachineController.fromArtboard(_nigelArtboard!, 'talker')
-            ?? StateMachineController.fromArtboard(_nigelArtboard!, 'State Machine 1');
+        _nigelStateMachine = StateMachineController.fromArtboard(
+                _nigelArtboard!, 'character') ??
+            StateMachineController.fromArtboard(_nigelArtboard!, 'cockpit') ??
+            StateMachineController.fromArtboard(_nigelArtboard!, 'talker') ??
+            StateMachineController.fromArtboard(
+                _nigelArtboard!, 'State Machine 1');
 
         if (_nigelStateMachine != null) {
           _nigelArtboard!.addController(_nigelStateMachine!);
-          debugPrint('Nigel state machine: ${_nigelStateMachine!.stateMachine.name}');
+          debugPrint(
+              'Nigel state machine: ${_nigelStateMachine!.stateMachine.name}');
           _nigelController = WFLCharacterController(
             characterName: 'nigel',
             artboard: _nigelArtboard!,
@@ -495,7 +461,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
       if (_terryArtboard != null || _nigelArtboard != null) {
         setState(() => _riveLoaded = true);
-        debugPrint('Rive bone animations loaded: terry=${_terryArtboard != null}, nigel=${_nigelArtboard != null}');
+        debugPrint(
+            'Rive bone animations loaded: terry=${_terryArtboard != null}, nigel=${_nigelArtboard != null}');
       } else {
         debugPrint('No Rive artboards available, using PNG fallback');
       }
@@ -510,12 +477,16 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   Future<void> _loadSkeletons() async {
     try {
       // Load Terry skeleton
-      _terrySkeleton = await loadSkeleton('assets/skeletons/terry_skeleton.json');
-      debugPrint('Terry skeleton loaded: ${_terrySkeleton!.bones.length} bones, ${_terrySkeleton!.animations.length} animations');
+      _terrySkeleton =
+          await loadSkeleton('assets/skeletons/terry_skeleton.json');
+      debugPrint(
+          'Terry skeleton loaded: ${_terrySkeleton!.bones.length} bones, ${_terrySkeleton!.animations.length} animations');
 
       // Load Nigel skeleton
-      _nigelSkeleton = await loadSkeleton('assets/skeletons/nigel_skeleton.json');
-      debugPrint('Nigel skeleton loaded: ${_nigelSkeleton!.bones.length} bones, ${_nigelSkeleton!.animations.length} animations');
+      _nigelSkeleton =
+          await loadSkeleton('assets/skeletons/nigel_skeleton.json');
+      debugPrint(
+          'Nigel skeleton loaded: ${_nigelSkeleton!.bones.length} bones, ${_nigelSkeleton!.animations.length} animations');
 
       setState(() => _skeletonsLoaded = true);
       debugPrint('Custom bone animation skeletons loaded successfully');
@@ -659,7 +630,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
     // Reload skeleton
     try {
-      final skeleton = await loadSkeleton('assets/skeletons/${character}_skeleton.json');
+      final skeleton =
+          await loadSkeleton('assets/skeletons/${character}_skeleton.json');
       setState(() {
         if (character == 'terry') {
           _terrySkeleton = skeleton;
@@ -668,7 +640,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         }
         _skeletonsLoaded = true;
       });
-      debugPrint('Hot-reload: $character skeleton reloaded (${skeleton.bones.length} bones)');
+      debugPrint(
+          'Hot-reload: $character skeleton reloaded (${skeleton.bones.length} bones)');
     } catch (e) {
       debugPrint('Hot-reload: Failed to reload $character skeleton: $e');
     }
@@ -678,7 +651,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   /// Hot-reload a single asset (evict from cache and refresh UI)
-  void _hotReloadAsset(String character, String layer, String asset, String? path) {
+  void _hotReloadAsset(
+      String character, String layer, String asset, String? path) {
     debugPrint('Hot-reload: $character/$layer/$asset');
 
     // Build the asset path to evict
@@ -710,7 +684,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   /// Preview a specific asset (set it as active and show in viewer)
-  void _previewAsset(String character, String layer, String asset, String? path) {
+  void _previewAsset(
+      String character, String layer, String asset, String? path) {
     debugPrint('Preview: $character/$layer/$asset');
 
     // Evict any cached version first
@@ -769,14 +744,16 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     // Also evict numbered layers (terry has 20, nigel has 15)
     for (int i = 0; i <= 25; i++) {
       paths.add('assets/characters/$character/layers/layer_$i.png');
-      paths.add('assets/characters/$character/layers/${i.toString().padLeft(2, '0')}.png');
+      paths.add(
+          'assets/characters/$character/layers/${i.toString().padLeft(2, '0')}.png');
     }
 
     // Evict each path from cache
     for (final path in paths) {
       imageCache.evict(AssetImage(path));
     }
-    debugPrint('Hot-reload: Evicted ${paths.length} cached images for $character');
+    debugPrint(
+        'Hot-reload: Evicted ${paths.length} cached images for $character');
   }
 
   void _onFocusChange() {
@@ -836,7 +813,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   void _startBlinkTimer() {
     _blinkTimer = Timer.periodic(const Duration(milliseconds: 2000 + 500), (_) {
       // Random delay between blinks (2-5 seconds)
-      if (_random.nextDouble() > 0.4) return; // 60% chance to skip = varied timing
+      if (_random.nextDouble() > 0.4)
+        return; // 60% chance to skip = varied timing
 
       // Start blink sequence with smooth transitions
       if (!mounted) return;
@@ -847,22 +825,25 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
       // Natural blink sequence (asymmetric timing)
       Future.delayed(const Duration(milliseconds: 60), () {
-        if (mounted) setState(() {
-          _terryBlinkState = 'closed';
-          _nigelBlinkState = 'closed';
-        });
+        if (mounted)
+          setState(() {
+            _terryBlinkState = 'closed';
+            _nigelBlinkState = 'closed';
+          });
       });
       Future.delayed(const Duration(milliseconds: 140), () {
-        if (mounted) setState(() {
-          _terryBlinkState = 'half';
-          _nigelBlinkState = 'half';
-        });
+        if (mounted)
+          setState(() {
+            _terryBlinkState = 'half';
+            _nigelBlinkState = 'half';
+          });
       });
       Future.delayed(const Duration(milliseconds: 180), () {
-        if (mounted) setState(() {
-          _terryBlinkState = 'open';
-          _nigelBlinkState = 'open';
-        });
+        if (mounted)
+          setState(() {
+            _terryBlinkState = 'open';
+            _nigelBlinkState = 'open';
+          });
       });
     });
   }
@@ -880,7 +861,18 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     setState(() {
       _isRecording = true;
       _recordingSeconds = 0;
+      _frameCount = 0;
       _capturedFrames.clear();
+    });
+
+    // Create frames directory
+    getTemporaryDirectory().then((tempDir) {
+      final framesPath = '${tempDir.path}/wfl_frames';
+      final framesDir = Directory(framesPath);
+      if (framesDir.existsSync()) {
+        framesDir.deleteSync(recursive: true);
+      }
+      framesDir.createSync(recursive: true);
     });
 
     // Timer for seconds display + auto-stop at 60s
@@ -891,21 +883,52 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       }
     });
 
-    // TODO: Actual frame capture would use RepaintBoundary + RenderRepaintBoundary.toImage()
-    // For now, we'll export via FFmpeg from the live view
-    debugPrint('Recording started - 30fps, 1080x720');
+    // 30fps frame capture
+    _frameTimer = Timer.periodic(const Duration(milliseconds: 33), (timer) {
+      _captureFrame();
+    });
+
+    debugPrint('Recording started - 30fps, RepaintBoundary capture');
+  }
+
+  Future<void> _captureFrame() async {
+    if (!_isRecording) return;
+
+    try {
+      final boundary = _captureKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) return;
+
+      final image = await boundary.toImage(pixelRatio: 1.5);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+
+      final bytes = byteData.buffer.asUint8List();
+      final tempDir = await getTemporaryDirectory();
+      final framesPath = '${tempDir.path}/wfl_frames';
+
+      final frameFile =
+          File('$framesPath/${_frameCount.toString().padLeft(4, '0')}.png');
+      await frameFile.writeAsBytes(bytes);
+      _frameCount++;
+    } catch (e) {
+      // Silently fail to avoid console flooding during recording
+    }
   }
 
   void _stopRecording() {
     _recordingTimer?.cancel();
+    _frameTimer?.cancel();
     setState(() => _isRecording = false);
 
     // Show export dialog
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF2a2a3e),
-        title: const Text('Recording Complete', style: TextStyle(color: Colors.white)),
+        title: const Text('Recording Complete',
+            style: TextStyle(color: Colors.white)),
         content: Text(
           'Captured $_recordingSeconds seconds.\nExport now?',
           style: const TextStyle(color: Colors.grey),
@@ -939,17 +962,23 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   Future<void> _toggleYouTube() async {
     if (WFLUploader.isYouTubeConnected) {
       // Show disconnect confirmation
+      if (!mounted) return;
       final disconnect = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: const Color(0xFF2a2a3e),
-          title: const Text('Disconnect YouTube?', style: TextStyle(color: Colors.white)),
-          content: const Text('You\'ll need to sign in again to upload.', style: TextStyle(color: Colors.grey)),
+          title: const Text('Disconnect YouTube?',
+              style: TextStyle(color: Colors.white)),
+          content: const Text('You\'ll need to sign in again to upload.',
+              style: TextStyle(color: Colors.grey)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Disconnect', style: TextStyle(color: Colors.red)),
+              child:
+                  const Text('Disconnect', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -961,7 +990,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     } else {
       // Connect
       final connected = await WFLUploader.connectYouTube();
-      if (connected) {
+      if (connected && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('YouTube connected! Ready to post.')),
         );
@@ -975,7 +1004,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   // ============================================================================
 
   @override
-  Future<CommandResult> animateCharacter(String character, String animation) async {
+  Future<CommandResult> animateCharacter(
+      String character, String animation) async {
     try {
       setState(() {
         if (character == 'terry') {
@@ -1044,7 +1074,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   @override
-  Future<CommandResult> moveCharacter(String character, double x, double y) async {
+  Future<CommandResult> moveCharacter(
+      String character, double x, double y) async {
     // Character positions are fixed in the cockpit layout
     // This would require architectural changes to support
     return CommandResult.error(
@@ -1288,9 +1319,11 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       artboard.addController(controller);
       _riveController = controller;
       // Use RiveInput enum - no typos, no frozen mouths (legacy)
-      _buttonState = controller.findInput<double>(RiveInput.buttonState.name) as SMINumber?;
+      _buttonState = controller.findInput<double>(RiveInput.buttonState.name)
+          as SMINumber?;
       // Note: String inputs don't exist in Rive - btnTarget removed
-      _isTalking = controller.findInput<bool>(RiveInput.isTalking.name) as SMIBool?;
+      _isTalking =
+          controller.findInput<bool>(RiveInput.isTalking.name) as SMIBool?;
     }
 
     // Initialize Data Binding controllers (new API)
@@ -1502,7 +1535,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       _flythroughVideo?.pause();
       setState(() => _flythroughMode = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Flythrough Mode OFF - 3 independent videos')),
+        const SnackBar(
+            content: Text('Flythrough Mode OFF - 3 independent videos')),
       );
       return;
     }
@@ -1541,7 +1575,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, pathController.text),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
@@ -1610,7 +1645,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
     if (!hasVideos) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Load videos first, then start Show Mode!')),
+        const SnackBar(
+            content: Text('Load videos first, then start Show Mode!')),
       );
       return;
     }
@@ -1670,9 +1706,12 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
       // If no video playing, try to get one that's at least initialized
       if (activePlayer == null) {
-        if (_porthole1?.value.isInitialized ?? false) activePlayer = _porthole1;
-        else if (_porthole2?.value.isInitialized ?? false) activePlayer = _porthole2;
-        else if (_porthole3?.value.isInitialized ?? false) activePlayer = _porthole3;
+        if (_porthole1?.value.isInitialized ?? false)
+          activePlayer = _porthole1;
+        else if (_porthole2?.value.isInitialized ?? false)
+          activePlayer = _porthole2;
+        else if (_porthole3?.value.isInitialized ?? false)
+          activePlayer = _porthole3;
       }
 
       if (activePlayer == null) {
@@ -1708,13 +1747,17 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       }
 
       // Generate TTS
-      final voiceId = character == 'nigel' ? _autoRoast.nigelVoiceId : _autoRoast.terryVoiceId;
-      final audioBytes = await _autoRoast.generateSpeech(roast, voiceId, character: character);
+      final voiceId = character == 'nigel'
+          ? _autoRoast.nigelVoiceId
+          : _autoRoast.terryVoiceId;
+      final audioBytes =
+          await _autoRoast.generateSpeech(roast, voiceId, character: character);
 
       if (audioBytes.isNotEmpty && _showMode) {
         // Save and play
         final tempDir = Directory.systemTemp;
-        final audioFile = File('${tempDir.path}/show_${character}_${DateTime.now().millisecondsSinceEpoch}.mp3');
+        final audioFile = File(
+            '${tempDir.path}/show_${character}_${DateTime.now().millisecondsSinceEpoch}.mp3');
         await audioFile.writeAsBytes(audioBytes);
 
         await _playWithLipSync(audioFile.path, character, roast);
@@ -1733,7 +1776,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
   /// Trigger a reaction animation for a character
   /// Reactions: neutral, laughing, shocked, facepalm, pointing, thinking
-  void _triggerReaction(String character, String reaction, {Duration duration = const Duration(seconds: 2)}) {
+  void _triggerReaction(String character, String reaction,
+      {Duration duration = const Duration(seconds: 2)}) {
     setState(() {
       if (character == 'terry') {
         _terryReaction = reaction;
@@ -1826,7 +1870,9 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, pathController.text),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -1945,7 +1991,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     _playReaction(character, 'grunt');
 
     try {
-      await _voicePlayer.play(AssetSource(audioFile.replaceFirst('assets/', '')));
+      await _voicePlayer
+          .play(AssetSource(audioFile.replaceFirst('assets/', '')));
     } catch (_) {
       // Audio file not found, just animate
     }
@@ -1962,7 +2009,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF2a2a3e),
-        title: Text('Load into Window $window', style: const TextStyle(color: Colors.white)),
+        title: Text('Load into Window $window',
+            style: const TextStyle(color: Colors.white)),
         content: TextField(
           controller: pathController,
           style: const TextStyle(color: Colors.white),
@@ -1972,7 +2020,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, pathController.text),
             child: const Text('Load'),
@@ -2072,7 +2121,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
     // Auto-roast if API keys set
     if (WFLConfig.autoRoastEnabled) {
-      final voiceId = window == 2 ? _autoRoast.nigelVoiceId : _autoRoast.terryVoiceId;
+      final voiceId =
+          window == 2 ? _autoRoast.nigelVoiceId : _autoRoast.terryVoiceId;
 
       try {
         var roast = await _autoRoast.describeSarcastic(file);
@@ -2083,7 +2133,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
           roast = words.sublist(0, 15).join(' ');
         }
 
-        final audioBytes = await _autoRoast.generateSpeech(roast, voiceId, character: character);
+        final audioBytes = await _autoRoast.generateSpeech(roast, voiceId,
+            character: character);
 
         if (audioBytes.isNotEmpty) {
           // Save temp audio and play with lip-sync
@@ -2121,7 +2172,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   /// Play audio with lip-sync from phoneme cues
-  Future<void> _playWithLipSync(String audioPath, String character, String text) async {
+  Future<void> _playWithLipSync(
+      String audioPath, String character, String text) async {
     // Generate basic cues from text (simplified)
     _currentCues = _generateMouthCues(text);
     _cueIndex = 0;
@@ -2141,7 +2193,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         return;
       }
 
-      final elapsed = DateTime.now().difference(_audioStartTime!).inMilliseconds / 1000.0;
+      final elapsed =
+          DateTime.now().difference(_audioStartTime!).inMilliseconds / 1000.0;
       final cue = _currentCues[_cueIndex];
 
       if (elapsed >= cue.time) {
@@ -2169,10 +2222,13 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
     try {
       // Get voice ID for character
-      final voiceId = character == 'nigel' ? _autoRoast.nigelVoiceId : _autoRoast.terryVoiceId;
+      final voiceId = character == 'nigel'
+          ? _autoRoast.nigelVoiceId
+          : _autoRoast.terryVoiceId;
 
       // Generate TTS audio (PCM format)
-      final pcmBytes = await _autoRoast.generateSpeech(text, voiceId, character: character);
+      final pcmBytes =
+          await _autoRoast.generateSpeech(text, voiceId, character: character);
 
       if (pcmBytes.isNotEmpty) {
         // Convert PCM to WAV by adding header
@@ -2180,11 +2236,13 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
         // Save as WAV file
         final tempDir = Directory.systemTemp;
-        final audioFile = File('${tempDir.path}/say_${character}_${DateTime.now().millisecondsSinceEpoch}.wav');
+        final audioFile = File(
+            '${tempDir.path}/say_${character}_${DateTime.now().millisecondsSinceEpoch}.wav');
         await audioFile.writeAsBytes(wavBytes);
 
         // Notify server first
-        _wsClient.sendStatus('speaking', {'character': character, 'text': text});
+        _wsClient
+            .sendStatus('speaking', {'character': character, 'text': text});
 
         // Start lip-sync animation
         _currentCues = _generateMouthCues(text);
@@ -2194,14 +2252,17 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
         // Start lip-sync timer
         _lipSyncTimer?.cancel();
-        _lipSyncTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+        _lipSyncTimer =
+            Timer.periodic(const Duration(milliseconds: 16), (timer) {
           if (_audioStartTime == null || _cueIndex >= _currentCues.length) {
             timer.cancel();
             _setMouth(character, 'x');
             _setTalking(character, false);
             return;
           }
-          final elapsed = DateTime.now().difference(_audioStartTime!).inMilliseconds / 1000.0;
+          final elapsed =
+              DateTime.now().difference(_audioStartTime!).inMilliseconds /
+                  1000.0;
           if (_cueIndex < _currentCues.length) {
             final cue = _currentCues[_cueIndex];
             if (elapsed >= cue.time) {
@@ -2229,7 +2290,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   /// Create WAV file from raw PCM data
-  List<int> _createWavFromPcm(List<int> pcmData, int sampleRate, int channels, int bitsPerSample) {
+  List<int> _createWavFromPcm(
+      List<int> pcmData, int sampleRate, int channels, int bitsPerSample) {
     final byteRate = sampleRate * channels * bitsPerSample ~/ 8;
     final blockAlign = channels * bitsPerSample ~/ 8;
     final dataSize = pcmData.length;
@@ -2238,20 +2300,24 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     final header = <int>[
       // RIFF header
       0x52, 0x49, 0x46, 0x46, // "RIFF"
-      fileSize & 0xff, (fileSize >> 8) & 0xff, (fileSize >> 16) & 0xff, (fileSize >> 24) & 0xff,
+      fileSize & 0xff, (fileSize >> 8) & 0xff, (fileSize >> 16) & 0xff,
+      (fileSize >> 24) & 0xff,
       0x57, 0x41, 0x56, 0x45, // "WAVE"
       // fmt chunk
       0x66, 0x6d, 0x74, 0x20, // "fmt "
       16, 0, 0, 0, // chunk size
       1, 0, // audio format (PCM)
       channels & 0xff, (channels >> 8) & 0xff,
-      sampleRate & 0xff, (sampleRate >> 8) & 0xff, (sampleRate >> 16) & 0xff, (sampleRate >> 24) & 0xff,
-      byteRate & 0xff, (byteRate >> 8) & 0xff, (byteRate >> 16) & 0xff, (byteRate >> 24) & 0xff,
+      sampleRate & 0xff, (sampleRate >> 8) & 0xff, (sampleRate >> 16) & 0xff,
+      (sampleRate >> 24) & 0xff,
+      byteRate & 0xff, (byteRate >> 8) & 0xff, (byteRate >> 16) & 0xff,
+      (byteRate >> 24) & 0xff,
       blockAlign & 0xff, (blockAlign >> 8) & 0xff,
       bitsPerSample & 0xff, (bitsPerSample >> 8) & 0xff,
       // data chunk
       0x64, 0x61, 0x74, 0x61, // "data"
-      dataSize & 0xff, (dataSize >> 8) & 0xff, (dataSize >> 16) & 0xff, (dataSize >> 24) & 0xff,
+      dataSize & 0xff, (dataSize >> 8) & 0xff, (dataSize >> 16) & 0xff,
+      (dataSize >> 24) & 0xff,
     ];
 
     return [...header, ...pcmData];
@@ -2288,20 +2354,25 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       debugPrint('WFL Roast: $roast');
 
       // Generate TTS
-      final voiceId = character == 'nigel' ? _autoRoast.nigelVoiceId : _autoRoast.terryVoiceId;
-      final audioBytes = await _autoRoast.generateSpeech(roast, voiceId, character: character);
+      final voiceId = character == 'nigel'
+          ? _autoRoast.nigelVoiceId
+          : _autoRoast.terryVoiceId;
+      final audioBytes =
+          await _autoRoast.generateSpeech(roast, voiceId, character: character);
 
       if (audioBytes.isNotEmpty) {
         // Save temp audio
         final tempDir = Directory.systemTemp;
-        final audioFile = File('${tempDir.path}/roast_${character}_${DateTime.now().millisecondsSinceEpoch}.mp3');
+        final audioFile = File(
+            '${tempDir.path}/roast_${character}_${DateTime.now().millisecondsSinceEpoch}.mp3');
         await audioFile.writeAsBytes(audioBytes);
 
         // Play with lip-sync
         await _playWithLipSync(audioFile.path, character, roast);
 
         // Notify server
-        _wsClient.sendStatus('roasted', {'character': character, 'roast': roast});
+        _wsClient
+            .sendStatus('roasted', {'character': character, 'roast': roast});
       }
     } catch (e) {
       debugPrint('WFL roast error: $e');
@@ -2318,14 +2389,22 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       final char = text[i].toLowerCase();
       String mouth = 'x';
 
-      if ('aáà'.contains(char)) mouth = 'a';
-      else if ('eéè'.contains(char)) mouth = 'e';
-      else if ('iíì'.contains(char)) mouth = 'i';
-      else if ('oóò'.contains(char)) mouth = 'o';
-      else if ('uúù'.contains(char)) mouth = 'u';
-      else if ('fv'.contains(char)) mouth = 'f';
-      else if ('lrw'.contains(char)) mouth = 'l';
-      else if ('mbp'.contains(char)) mouth = 'm';
+      if ('aáà'.contains(char))
+        mouth = 'a';
+      else if ('eéè'.contains(char))
+        mouth = 'e';
+      else if ('iíì'.contains(char))
+        mouth = 'i';
+      else if ('oóò'.contains(char))
+        mouth = 'o';
+      else if ('uúù'.contains(char))
+        mouth = 'u';
+      else if ('fv'.contains(char))
+        mouth = 'f';
+      else if ('lrw'.contains(char))
+        mouth = 'l';
+      else if ('mbp'.contains(char))
+        mouth = 'm';
       else if (char == ' ') mouth = 'x';
 
       if (mouth != 'x' || (cues.isNotEmpty && cues.last.mouth != 'x')) {
@@ -2342,7 +2421,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     return Scaffold(
       body: KeyboardListener(
         focusNode: _focusNode,
-        autofocus: false,  // Focus requested in initState after layout
+        autofocus: false, // Focus requested in initState after layout
         onKeyEvent: _handleKeyEvent,
         child: Column(
           children: [
@@ -2363,73 +2442,80 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
                           child: Center(
                             child: AspectRatio(
                               aspectRatio: 16 / 9,
-                              child: ClipRect(
-                                child: GestureDetector(
-                                  onTapDown: _onCockpitTap,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      // WARP MODE: Full-screen video behind everything
-                                      if (_isWarp && _warpPlayer != null && _warpPlayer!.value.isInitialized)
-                                        Positioned.fill(
-                                          child: ColorFiltered(
-                                            colorFilter: ColorFilter.mode(
-                                              Colors.black.withOpacity(0.3),
-                                              BlendMode.darken,
+                              child: RepaintBoundary(
+                                key: _captureKey,
+                                child: ClipRect(
+                                  child: GestureDetector(
+                                    onTapDown: _onCockpitTap,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        // WARP MODE: Full-screen video behind everything
+                                        if (_isWarp &&
+                                            _warpPlayer != null &&
+                                            _warpPlayer!.value.isInitialized)
+                                          Positioned.fill(
+                                            child: ColorFiltered(
+                                              colorFilter: ColorFilter.mode(
+                                                Color.fromRGBO(0, 0, 0, 0.3),
+                                                BlendMode.darken,
+                                              ),
+                                              child: VideoPlayer(_warpPlayer!),
                                             ),
-                                            child: VideoPlayer(_warpPlayer!),
+                                          ),
+
+                                        // Normal background (dimmed in warp)
+                                        Positioned.fill(
+                                          child: Opacity(
+                                            opacity: _isWarp ? 0.0 : 1.0,
+                                            child: _spaceship,
                                           ),
                                         ),
 
-                                      // Normal background (dimmed in warp)
-                                      Positioned.fill(
-                                        child: Opacity(
-                                          opacity: _isWarp ? 0.0 : 1.0,
-                                          child: _spaceship,
+                                        // Ship overlay (always on top) - IgnorePointer so characters can be dragged
+                                        Positioned.fill(
+                                            child: IgnorePointer(
+                                                child: _buttonsPanel)),
+                                        _buildPortholes(),
+                                        // Characters BEHIND the table - using bone animation system
+                                        // Terry - bone animation with layers
+                                        Positioned(
+                                          left: 50,
+                                          bottom: -50,
+                                          child: _buildCharacter('terry'),
                                         ),
-                                      ),
+                                        // Nigel - bone animation with layers
+                                        Positioned(
+                                          right: 50,
+                                          bottom: -50,
+                                          child: _buildCharacter('nigel'),
+                                        ),
+                                        // Table IN FRONT of characters (talk show desk) - IgnorePointer for character drag
+                                        Positioned(
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          child: IgnorePointer(child: _table),
+                                        ),
+                                        Positioned(
+                                          bottom: 10,
+                                          right: 10,
+                                          child: _buildHotkeyHints(),
+                                        ),
 
-                                      // Ship overlay (always on top) - IgnorePointer so characters can be dragged
-                                      Positioned.fill(child: IgnorePointer(child: _buttonsPanel)),
-                                      _buildPortholes(),
-                                      // Characters BEHIND the table - using bone animation system
-                                      // Terry - bone animation with layers
-                                      Positioned(
-                                        left: 50,
-                                        bottom: -50,
-                                        child: _buildCharacter('terry'),
-                                      ),
-                                      // Nigel - bone animation with layers
-                                      Positioned(
-                                        right: 50,
-                                        bottom: -50,
-                                        child: _buildCharacter('nigel'),
-                                      ),
-                                      // Table IN FRONT of characters (talk show desk) - IgnorePointer for character drag
-                                      Positioned(
-                                        bottom: 0,
-                                        left: 0,
-                                        right: 0,
-                                        child: IgnorePointer(child: _table),
-                                      ),
-                                      Positioned(
-                                        bottom: 10,
-                                        right: 10,
-                                        child: _buildHotkeyHints(),
-                                      ),
+                                        // WARP HUD - green text overlay
+                                        if (_isWarp) _buildWarpHUD(),
 
-                                      // WARP HUD - green text overlay
-                                      if (_isWarp) _buildWarpHUD(),
+                                        // Subtitle bar at bottom
+                                        _buildSubtitleBar(),
 
-                                      // Subtitle bar at bottom
-                                      _buildSubtitleBar(),
+                                        // SFX trigger buttons panel (top-right)
+                                        _buildSfxPanel(),
 
-                                      // SFX trigger buttons panel (top-right)
-                                      _buildSfxPanel(),
-
-                                      // Play/Pause dialogue button (bottom-right)
-                                      _buildPlayPauseButton(),
-                                    ],
+                                        // Play/Pause dialogue button (bottom-right)
+                                        _buildPlayPauseButton(),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -2454,346 +2540,41 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     );
   }
 
-  /// Top bar with React Mode toggle and Save Preset
   Widget _buildTopBar() {
-    return Container(
-      height: 50,
-      color: const Color(0xFF2a2a3e),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          // React Mode toggle
-          const Text('React Mode', style: TextStyle(color: Colors.white70)),
-          const SizedBox(width: 8),
-          Switch(
-            value: _reactMode,
-            onChanged: (v) => setState(() => _reactMode = v),
-            activeColor: Colors.greenAccent,
-          ),
-          Text(
-            _reactMode ? 'ON - Roast + Lip-sync' : 'OFF - Clean playback',
-            style: TextStyle(
-              color: _reactMode ? Colors.greenAccent : Colors.grey,
-              fontSize: 12,
-            ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // Flythrough Mode toggle
-          GestureDetector(
-            onTap: _toggleFlythroughMode,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: _flythroughMode ? Colors.cyan : const Color(0xFF3a3a4e),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _flythroughMode ? Colors.cyan.shade300 : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.flight,
-                    color: _flythroughMode ? Colors.white : Colors.cyan,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _flythroughMode ? 'FLYTHROUGH' : 'FLY',
-                    style: TextStyle(
-                      color: _flythroughMode ? Colors.white : Colors.cyan,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // SHOW MODE toggle - AI auto-commentary
-          GestureDetector(
-            onTap: _toggleShowMode,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: _showMode ? Colors.purple : const Color(0xFF3a3a4e),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _showMode ? Colors.purple.shade300 : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _showMode ? Icons.auto_awesome : Icons.movie_creation,
-                    color: _showMode ? Colors.white : Colors.purple,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _showMode
-                        ? (_isGeneratingCommentary ? 'THINKING...' : 'SHOW ON')
-                        : 'SHOW',
-                    style: TextStyle(
-                      color: _showMode ? Colors.white : Colors.purple,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // LIVE MIC button - hold to talk, release to roast
-          GestureDetector(
-            onTap: _toggleLiveMic,
-            onLongPressStart: (_) => _startLiveMicRecording(),
-            onLongPressEnd: (_) => _stopLiveMicRecording(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: _isRecordingMic
-                    ? Colors.orange
-                    : (_isLiveMicOn ? Colors.orange.shade800 : const Color(0xFF3a3a4e)),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _isRecordingMic ? Colors.orange.shade300 : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _isRecordingMic ? Icons.mic : Icons.mic_none,
-                    color: _isLiveMicOn ? Colors.white : Colors.orange,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _isRecordingMic ? 'LISTENING...' : (_isLiveMicOn ? 'MIC ON' : 'LIVE'),
-                    style: TextStyle(
-                      color: _isLiveMicOn ? Colors.white : Colors.orange,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // REC button - 30fps capture
-          GestureDetector(
-            onTap: _toggleRecording,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: _isRecording ? Colors.red : const Color(0xFF3a3a4e),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _isRecording ? Colors.red.shade300 : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: _isRecording ? Colors.white : Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isRecording ? 'REC ${_recordingSeconds}s' : 'REC',
-                    style: TextStyle(
-                      color: _isRecording ? Colors.white : Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const Spacer(),
-
-          // Save Preset button
-          TextButton.icon(
-            onPressed: _showSavePresetDialog,
-            icon: const Icon(Icons.save, size: 18),
-            label: const Text('Save Preset'),
-            style: TextButton.styleFrom(foregroundColor: Colors.white70),
-          ),
-
-          // Load Preset button
-          TextButton.icon(
-            onPressed: _showLoadPresetDialog,
-            icon: const Icon(Icons.folder_open, size: 18),
-            label: const Text('Load'),
-            style: TextButton.styleFrom(foregroundColor: Colors.white70),
-          ),
-
-          const SizedBox(width: 16),
-
-          // YouTube connect/disconnect
-          TextButton.icon(
-            onPressed: _toggleYouTube,
-            icon: Icon(
-              WFLUploader.isYouTubeConnected ? Icons.link : Icons.link_off,
-              size: 18,
-              color: WFLUploader.isYouTubeConnected ? Colors.green : Colors.grey,
-            ),
-            label: Text(
-              WFLUploader.isYouTubeConnected ? 'YouTube ✓' : 'Connect YouTube',
-              style: TextStyle(
-                color: WFLUploader.isYouTubeConnected ? Colors.green : Colors.white70,
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // AI Chat button - Multi-model comedy writer + dev console
-          TextButton.icon(
-            onPressed: () => WFLAIChatDevDialog.show(context, commandExecutor: this),
-            icon: const Icon(Icons.auto_awesome, size: 18, color: Colors.deepPurple),
-            label: const Text('AI Writer + Dev', style: TextStyle(color: Colors.deepPurple)),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Layer Manager button
-          TextButton.icon(
-            onPressed: _showLayerManager,
-            icon: const Icon(Icons.layers, size: 18, color: Colors.teal),
-            label: const Text('Layers', style: TextStyle(color: Colors.teal)),
-          ),
-        ],
-      ),
+    return WFLTopBar(
+      reactMode: _reactMode,
+      flythroughMode: _flythroughMode,
+      showMode: _showMode,
+      isGeneratingCommentary: _isGeneratingCommentary,
+      isRecordingMic: _isRecordingMic,
+      isLiveMicOn: _isLiveMicOn,
+      isRecording: _isRecording,
+      recordingSeconds: _recordingSeconds,
+      onToggleReactMode: (v) => setState(() => _reactMode = v),
+      onToggleFlythroughMode: _toggleFlythroughMode,
+      onToggleShowMode: _toggleShowMode,
+      onToggleLiveMic: _toggleLiveMic,
+      onStartLiveMicRecording: (_) => _startLiveMicRecording(),
+      onStopLiveMicRecording: (_) => _stopLiveMicRecording(),
+      onToggleRecording: _toggleRecording,
+      onShowSavePresetDialog: _showSavePresetDialog,
+      onShowLoadPresetDialog: _showLoadPresetDialog,
+      onToggleYouTube: _toggleYouTube,
+      onShowAIChat: () =>
+          WFLAIChatDevDialog.show(context, commandExecutor: this),
+      onShowLayerManager: _showLayerManager,
     );
   }
 
-  /// Queue panel on the right - 5-second thumbnails, drag to shuffle
   Widget _buildQueuePanel() {
-    return Container(
-      width: 200,
-      color: const Color(0xFF1a1a2e),
-      child: Column(
-        children: [
-          // Queue header
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: const Color(0xFF2a2a3e),
-            child: Row(
-              children: [
-                const Text('Queue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                Text('${_roastQueue.length}', style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-
-          // Queue list (drag to reorder)
-          Expanded(
-            child: _roastQueue.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Drop videos\nto queue',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ReorderableListView.builder(
-                    itemCount: _roastQueue.length,
-                    onReorder: _reorderQueue,
-                    itemBuilder: (context, index) {
-                      final item = _roastQueue[index];
-                      final isPlaying = _isPlayingQueue && index == _currentQueueIndex;
-                      return _buildQueueItem(item, index, isPlaying);
-                    },
-                  ),
-          ),
-
-          // Play Queue button
-          Container(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _roastQueue.isEmpty ? null : _playQueue,
-                    icon: Icon(_isPlayingQueue ? Icons.stop : Icons.play_arrow),
-                    label: Text(_isPlayingQueue ? 'Stop' : 'Play Queue'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isPlayingQueue ? Colors.red : Colors.green,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _roastQueue.isEmpty ? null : _clearQueue,
-                  icon: const Icon(Icons.clear_all),
-                  color: Colors.grey,
-                  tooltip: 'Clear queue',
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQueueItem(QueueItem item, int index, bool isPlaying) {
-    return Container(
-      key: ValueKey(item.id),
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isPlaying ? Colors.green.withOpacity(0.3) : const Color(0xFF2a2a3e),
-        borderRadius: BorderRadius.circular(8),
-        border: isPlaying ? Border.all(color: Colors.green, width: 2) : null,
-      ),
-      child: ListTile(
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: item.thumbnail != null
-              ? Image.memory(item.thumbnail!, width: 50, height: 50, fit: BoxFit.cover)
-              : Container(width: 50, height: 50, color: Colors.grey.shade800),
-        ),
-        title: Text(
-          item.filename,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          'Window ${item.window}',
-          style: const TextStyle(color: Colors.grey, fontSize: 10),
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.close, size: 16),
-          color: Colors.grey,
-          onPressed: () => _removeFromQueue(index),
-        ),
-      ),
+    return WFLQueuePanel(
+      queue: _roastQueue,
+      isPlayingQueue: _isPlayingQueue,
+      currentQueueIndex: _currentQueueIndex,
+      onReorder: _reorderQueue,
+      onRemove: _removeFromQueue,
+      onPlayQueue: _playQueue,
+      onClearQueue: _clearQueue,
     );
   }
 
@@ -2860,13 +2641,18 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   /// Show layer manager dialog
   void _showLayerManager() async {
     // Use absolute paths for Windows
-    const basePath = r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer';
+    const basePath =
+        r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer';
     WFLLayerManager.show(
       context,
-      terrySkeletonPath: r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\skeletons\terry_skeleton.json',
-      nigelSkeletonPath: r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\skeletons\nigel_skeleton.json',
-      terryAssetsPath: r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\characters\terry',
-      nigelAssetsPath: r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\characters\nigel',
+      terrySkeletonPath:
+          r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\skeletons\terry_skeleton.json',
+      nigelSkeletonPath:
+          r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\skeletons\nigel_skeleton.json',
+      terryAssetsPath:
+          r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\characters\terry',
+      nigelAssetsPath:
+          r'C:\Users\Owner\OneDrive\Desktop\wooking for love logo pack\WFL_PROJECT\flutter_viewer\assets\characters\nigel',
       onLayersChanged: () {
         // Reload skeletons when layers change
         _loadSkeletons();
@@ -2912,7 +2698,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     // Save current window configs + queue
     final preset = {
       'name': name,
-      'queue': _roastQueue.map((q) => {'path': q.path, 'window': q.window}).toList(),
+      'queue':
+          _roastQueue.map((q) => {'path': q.path, 'window': q.window}).toList(),
       'reactMode': _reactMode,
     };
     // In real app, save to SharedPreferences or file
@@ -2939,59 +2726,16 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     );
   }
 
-  /// Volume slider: whisper to TikTok loud
   Widget _buildVolumeSlider() {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Icon(
-            _volume < 0.3 ? Icons.volume_mute : (_volume < 0.7 ? Icons.volume_down : Icons.volume_up),
-            color: Colors.white54,
-            size: 20,
-          ),
-          Expanded(
-            child: Slider(
-              value: _volume,
-              min: 0,
-              max: 1,
-              onChanged: (v) {
-                setState(() => _volume = v);
-                _voicePlayer.setVolume(v);
-              },
-              activeColor: Colors.greenAccent,
-              inactiveColor: Colors.grey.shade700,
-            ),
-          ),
-          Text(
-            _volume < 0.3 ? 'Whisper' : (_volume < 0.7 ? 'Normal' : 'Loud'),
-            style: const TextStyle(color: Colors.white54, fontSize: 10),
-          ),
-          const SizedBox(width: 12),
-          // Export button
-          ElevatedButton.icon(
-            onPressed: _exportVideo,
-            icon: const Icon(Icons.movie, size: 16),
-            label: const Text('Export'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Export & Post - the one-click nuclear option
-          ElevatedButton.icon(
-            onPressed: _exportAndPost,
-            icon: const Icon(Icons.rocket_launch, size: 16),
-            label: Text('Post #${WFLUploader.roastNumber}'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-          ),
-        ],
-      ),
+    return WFLBottomControls(
+      volume: _volume,
+      onVolumeChanged: (v) {
+        setState(() => _volume = v);
+        _voicePlayer.setVolume(v);
+      },
+      onExport: _exportVideo,
+      onExportAndPost: _exportAndPost,
+      roastNumber: WFLUploader.roastNumber,
     );
   }
 
@@ -3007,7 +2751,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF2a2a3e),
-        title: const Text('Export Quality', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Export Quality', style: TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -3027,13 +2772,15 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF2a2a3e),
-        title: Text('Exporting ${preset.name}...', style: const TextStyle(color: Colors.white)),
+        title: Text('Exporting ${preset.name}...',
+            style: const TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            Text('${preset.resolution} @ ${preset.fps}fps', style: const TextStyle(color: Colors.grey)),
+            Text('${preset.resolution} @ ${preset.fps}fps',
+                style: const TextStyle(color: Colors.grey)),
           ],
         ),
       ),
@@ -3043,7 +2790,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       // Use temp directory - antivirus won't lock it, cleans up automatically
       final tempDir = await getTemporaryDirectory();
       final framesPath = '${tempDir.path}/wfl_frames';
-      final outputPath = '${tempDir.path}/output_${preset.name.toLowerCase()}.mp4';
+      final outputPath =
+          '${tempDir.path}/output_${preset.name.toLowerCase()}.mp4';
 
       // Clean frames folder first - crashes if leftover from last render
       final framesDir = Directory(framesPath);
@@ -3055,16 +2803,24 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       // FFmpeg export with preset
       final result = await Process.run('ffmpeg', [
         '-y',
-        '-framerate', '${preset.fps}',
-        '-i', '$framesPath/%04d.png',
-        '-vcodec', 'libx264',
-        '-s', preset.resolution,
-        '-pix_fmt', 'yuv420p',
-        '-crf', '${preset.crf}',
-        '-af', 'loudnorm',
+        '-framerate',
+        '${preset.fps}',
+        '-i',
+        '$framesPath/%04d.png',
+        '-vcodec',
+        'libx264',
+        '-s',
+        preset.resolution,
+        '-pix_fmt',
+        'yuv420p',
+        '-crf',
+        '${preset.crf}',
+        '-af',
+        'loudnorm',
         outputPath,
       ]);
 
+      if (!mounted) return;
       Navigator.pop(context);
 
       if (result.exitCode == 0) {
@@ -3077,9 +2833,11 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         );
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('FFmpeg not found. Install FFmpeg first.')),
+        const SnackBar(
+            content: Text('FFmpeg not found. Install FFmpeg first.')),
       );
     }
   }
@@ -3087,7 +2845,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   Widget _exportOption(BuildContext ctx, ExportPreset preset) {
     return ListTile(
       title: Text(preset.name, style: const TextStyle(color: Colors.white)),
-      subtitle: Text('${preset.resolution} • ${preset.description}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+      subtitle: Text('${preset.resolution} • ${preset.description}',
+          style: const TextStyle(color: Colors.grey, fontSize: 11)),
       onTap: () => Navigator.pop(ctx, preset),
     );
   }
@@ -3110,7 +2869,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
           children: [
             const Icon(Icons.rocket_launch, color: Colors.green),
             const SizedBox(width: 8),
-            Text('Posting Roast #${WFLUploader.roastNumber}', style: const TextStyle(color: Colors.white)),
+            Text('Posting Roast #${WFLUploader.roastNumber}',
+                style: const TextStyle(color: Colors.white)),
           ],
         ),
         content: const Column(
@@ -3118,7 +2878,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
           children: [
             CircularProgressIndicator(color: Colors.green),
             SizedBox(height: 16),
-            Text('Rendering → YouTube → Share Sheet', style: TextStyle(color: Colors.grey)),
+            Text('Rendering → YouTube → Share Sheet',
+                style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),
@@ -3128,23 +2889,32 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       // Use temp directory - antivirus won't lock it
       final tempDir = await getTemporaryDirectory();
       final framesPath = '${tempDir.path}/wfl_frames';
-      final outputPath = '${tempDir.path}/output_roast_${WFLUploader.roastNumber}.mp4';
+      final outputPath =
+          '${tempDir.path}/output_roast_${WFLUploader.roastNumber}.mp4';
 
       // 1. Export video (YouTube preset - 1080x720)
       await Process.run('ffmpeg', [
         '-y',
-        '-framerate', '30',
-        '-i', '$framesPath/%04d.png',
-        '-vcodec', 'libx264',
-        '-s', '1080x720',
-        '-pix_fmt', 'yuv420p',
-        '-crf', '18',
-        '-af', 'loudnorm',
+        '-framerate',
+        '30',
+        '-i',
+        '$framesPath/%04d.png',
+        '-vcodec',
+        'libx264',
+        '-s',
+        '1080x720',
+        '-pix_fmt',
+        'yuv420p',
+        '-crf',
+        '18',
+        '-af',
+        'loudnorm',
         outputPath,
       ]);
 
       final videoFile = File(outputPath);
       if (!await videoFile.exists()) {
+        if (!mounted) return;
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Export failed. Check FFmpeg.')),
@@ -3158,10 +2928,12 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         title: 'Terry & Nigel roast TikTok #${WFLUploader.roastNumber}',
       );
 
+      if (!mounted) return;
       Navigator.pop(context);
 
       // 3. Show results
       final youtubeUrl = results['youtube'];
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -3179,10 +2951,12 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
             children: [
               if (youtubeUrl != null) ...[
                 const Text('YouTube:', style: TextStyle(color: Colors.grey)),
-                SelectableText(youtubeUrl, style: const TextStyle(color: Colors.blue)),
+                SelectableText(youtubeUrl,
+                    style: const TextStyle(color: Colors.blue)),
                 const SizedBox(height: 8),
               ],
-              const Text('Share sheet opened for TikTok/Reels/Shorts', style: TextStyle(color: Colors.grey)),
+              const Text('Share sheet opened for TikTok/Reels/Shorts',
+                  style: TextStyle(color: Colors.grey)),
             ],
           ),
           actions: [
@@ -3196,6 +2970,7 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
       setState(() {}); // Update roast number
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Post failed: $e')),
@@ -3204,967 +2979,146 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
   }
 
   Widget _buildHotkeyHints() {
-    // Show focus hint if keyboard lost focus
-    if (!_hasFocus) {
-      return GestureDetector(
-        onTap: () => _focusNode.requestFocus(),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.orange.shade900.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.orange, width: 2),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.keyboard, color: Colors.white, size: 16),
-              SizedBox(width: 8),
-              Text(
-                'Click cockpit to control',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('F1 Thrusters', style: TextStyle(fontSize: 10, color: Colors.white70)),
-          const Text('F2 Warp', style: TextStyle(fontSize: 10, color: Colors.white70)),
-          const Text('F3 Shields', style: TextStyle(fontSize: 10, color: Colors.white70)),
-          if (!_isWarp) const Text('SHIFT+W Warp Mode', style: TextStyle(fontSize: 10, color: Colors.green)),
-          Text(
-            _flythroughMode ? 'SHIFT+T Exit Flythrough' : 'SHIFT+T Flythrough',
-            style: TextStyle(fontSize: 10, color: _flythroughMode ? Colors.cyan : Colors.cyan.shade300),
-          ),
-          const Text('SHIFT+F Focus Mode', style: TextStyle(fontSize: 10, color: Colors.cyan)),
-        ],
-      ),
+    return WFLHotkeyHints(
+      hasFocus: _hasFocus,
+      isWarp: _isWarp,
+      flythroughMode: _flythroughMode,
+      onRequestFocus: () => _focusNode.requestFocus(),
     );
   }
 
   /// WARP HUD - green text, fake spaceship display
   Widget _buildWarpHUD() {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: Stack(
-          children: [
-            // Top scanline
-            Positioned(
-              top: 20,
-              left: 20,
-              right: 20,
-              child: Container(
-                height: 1,
-                color: Colors.green.withOpacity(0.3),
-              ),
-            ),
-
-            // Bottom HUD bar
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    // Warp speed
-                    Text(
-                      'WARP ${_warpSpeed.toStringAsFixed(2)}c',
-                      style: TextStyle(
-                        color: Colors.green.shade400,
-                        fontSize: 14,
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 30),
-
-                    // Destination
-                    Text(
-                      'DEST: VIRAL CLIP',
-                      style: TextStyle(
-                        color: Colors.green.shade300,
-                        fontSize: 12,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Exit hint
-                    Text(
-                      '[SHIFT+W] EXIT WARP',
-                      style: TextStyle(
-                        color: Colors.green.shade500,
-                        fontSize: 10,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Corner brackets (HUD frame)
-            ..._buildHUDCorners(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildHUDCorners() {
-    const cornerSize = 30.0;
-    const color = Colors.green;
-    const thickness = 2.0;
-
-    return [
-      // Top-left
-      Positioned(
-        top: 10,
-        left: 10,
-        child: Container(
-          width: cornerSize,
-          height: cornerSize,
-          decoration: const BoxDecoration(
-            border: Border(
-              top: BorderSide(color: color, width: thickness),
-              left: BorderSide(color: color, width: thickness),
-            ),
-          ),
-        ),
-      ),
-      // Top-right
-      Positioned(
-        top: 10,
-        right: 10,
-        child: Container(
-          width: cornerSize,
-          height: cornerSize,
-          decoration: const BoxDecoration(
-            border: Border(
-              top: BorderSide(color: color, width: thickness),
-              right: BorderSide(color: color, width: thickness),
-            ),
-          ),
-        ),
-      ),
-      // Bottom-left
-      Positioned(
-        bottom: 40,
-        left: 10,
-        child: Container(
-          width: cornerSize,
-          height: cornerSize,
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: color, width: thickness),
-              left: BorderSide(color: color, width: thickness),
-            ),
-          ),
-        ),
-      ),
-      // Bottom-right
-      Positioned(
-        bottom: 40,
-        right: 10,
-        child: Container(
-          width: cornerSize,
-          height: cornerSize,
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: color, width: thickness),
-              right: BorderSide(color: color, width: thickness),
-            ),
-          ),
-        ),
-      ),
-    ];
+    return WFLWarpHUD(warpSpeed: _warpSpeed);
   }
 
   Widget _buildPortholes() {
-    // In flythrough mode, show clipped regions of single background video
-    if (_flythroughMode && _flythroughVideo != null && _flythroughVideo!.value.isInitialized) {
-      return Stack(
-        children: [
-          // Porthole 1 - Left (shows left portion of video)
-          Positioned(
-            left: 100,
-            top: 80,
-            child: _buildFlythroughPorthole(1, const Alignment(-0.7, 0)),
-          ),
-          // Porthole 2 - Center (shows center portion of video)
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 60,
-            child: Center(child: _buildFlythroughPorthole(2, Alignment.center)),
-          ),
-          // Porthole 3 - Right (shows right portion of video)
-          Positioned(
-            right: 100,
-            top: 80,
-            child: _buildFlythroughPorthole(3, const Alignment(0.7, 0)),
-          ),
-        ],
-      );
-    }
-
-    // Normal mode - 3 independent videos
-    return Stack(
-      children: [
-        // Porthole 1 - Left
-        Positioned(
-          left: 100,
-          top: 80,
-          child: _buildPorthole(1, _porthole1),
-        ),
-        // Porthole 2 - Center
-        Positioned(
-          left: 0,
-          right: 0,
-          top: 60,
-          child: Center(child: _buildPorthole(2, _porthole2)),
-        ),
-        // Porthole 3 - Right
-        Positioned(
-          right: 100,
-          top: 80,
-          child: _buildPorthole(3, _porthole3),
-        ),
-      ],
-    );
-  }
-
-  /// Build a flythrough porthole - clips a region of the shared background video
-  Widget _buildFlythroughPorthole(int index, Alignment alignment) {
-    const size = 150.0;
-    final videoWidth = _flythroughVideo!.value.size.width;
-    final videoHeight = _flythroughVideo!.value.size.height;
-    final aspectRatio = videoWidth / videoHeight;
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.cyan.shade700, width: 4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.cyan.withOpacity(0.3),
-            blurRadius: 15,
-            spreadRadius: 3,
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: OverflowBox(
-          maxWidth: double.infinity,
-          maxHeight: double.infinity,
-          child: SizedBox(
-            // Make video large enough to clip different regions
-            width: size * 3,
-            height: size * 3 / aspectRatio,
-            child: FittedBox(
-              fit: BoxFit.cover,
-              alignment: alignment,
-              child: SizedBox(
-                width: videoWidth,
-                height: videoHeight,
-                child: VideoPlayer(_flythroughVideo!),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPorthole(int index, VideoPlayerController? controller) {
-    const size = 150.0;
-
-    return GestureDetector(
-      onTap: () => _onPortholeDropped(index),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade700, width: 4),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 10,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: ClipOval(
-          // ClipOval for circular porthole
-          child: controller != null && controller.value.isInitialized
-              ? VideoPlayer(controller)
-              : Container(
-                  color: Colors.black,
-                  child: Center(
-                    child: Icon(
-                      Icons.add_circle_outline,
-                      color: Colors.grey.shade600,
-                      size: 40,
-                    ),
-                  ),
-                ),
-        ),
-      ),
+    return WFLPortholes(
+      flythroughMode: _flythroughMode,
+      flythroughVideo: _flythroughVideo,
+      porthole1: _porthole1,
+      porthole2: _porthole2,
+      porthole3: _porthole3,
+      onPortholeDropped: _onPortholeDropped,
     );
   }
 
   /// Build character using Rive bone animation (preferred) or transparent PNG fallback
   /// Rive provides smooth bone-based animations, PNG is used as fallback
-  /// Build character with separate resizable components (body, eyes, mouth)
-  /// Returns a Stack containing all components as individually positioned widgets
-  /// Uses simple_animations MirrorAnimationBuilder for organic idle motion
-  Widget _buildCharacterWithComponents(String name, Image body, String mouth) {
-    final config = _characterConfig[name] ?? _characterConfig['terry']!;
-    final blinkState = name == 'terry' ? _terryBlinkState : _nigelBlinkState;
+  /// Build character using WFLCharacter widget
+  Widget _buildCharacter(String name) {
+    final reactionMods = _getReactionModifiers(name);
 
-    // Get component transforms for this character
-    final bodyScale = name == 'terry' ? _terryBodyScale : _nigelBodyScale;
-    final bodyOffset = name == 'terry' ? _terryBodyOffset : _nigelBodyOffset;
-    final eyesScale = name == 'terry' ? _terryEyesScale : _nigelEyesScale;
-    final eyesOffset = name == 'terry' ? _terryEyesOffset : _nigelEyesOffset;
-    final mouthScale = name == 'terry' ? _terryMouthScale : _nigelMouthScale;
-    final mouthOffset = name == 'terry' ? _terryMouthOffset : _nigelMouthOffset;
-
-    // Select the appropriate MovieTween for this character
-    final idleTween = name == 'terry' ? terryIdleTween : nigelIdleTween;
-
-    // Base positions - characters sit behind table (table is at bottom: 0)
-    final baseLeft = name == 'terry' ? 50.0 : null;
-    final baseRight = name == 'terry' ? null : 50.0;
-    const baseBottom = -100.0;  // Negative to push characters DOWN behind table
-
-    // Component colors for resize boxes
-    final bodyColor = name == 'terry' ? Colors.cyan : Colors.lightGreen;
-    final eyesColor = name == 'terry' ? Colors.blue : Colors.teal;
-    final mouthColor = name == 'terry' ? Colors.orange : Colors.amber;
-
-    // WRAP ENTIRE CHARACTER IN MIRRORANIMATIONBUILDER
-    // This gives us fluid bone-like movement: breathing, swaying, head bobbing
-    // MirrorAnimationBuilder automatically loops forward<->backward for seamless idle
-    return MirrorAnimationBuilder<Movie>(
-      tween: idleTween,
-      duration: idleTween.duration,
-      builder: (context, value, child) {
-        // Extract animation values from MovieTween
-        final breathY = value.get<double>('breathY');
-        final eyeX = value.get<double>('eyeX');
-        final eyeY = value.get<double>('eyeY');
-        final headBob = value.get<double>('headBob');
-        final sway = value.get<double>('sway');
-        final lean = value.get<double>('lean');
-
-        return Transform(
-          transform: Matrix4.identity()
-            ..translate(sway, breathY + headBob)
-            ..rotateZ(lean * 0.01),
-          alignment: Alignment.bottomCenter,
-          child: _buildCharacterStack(
-            name: name,
-            config: config,
-            blinkState: blinkState,
-            eyeX: eyeX,
-            eyeY: eyeY,
-            headBob: headBob,
-            bodyScale: bodyScale,
-            bodyOffset: bodyOffset,
-            eyesScale: eyesScale,
-            eyesOffset: eyesOffset,
-            mouthScale: mouthScale,
-            mouthOffset: mouthOffset,
-            baseLeft: baseLeft,
-            baseRight: baseRight,
-            baseBottom: baseBottom,
-            bodyColor: bodyColor,
-            eyesColor: eyesColor,
-            mouthColor: mouthColor,
-            body: body,
-            mouth: mouth,
-          ),
-        );
+    return WFLCharacter(
+      name: name,
+      riveLoaded: _riveLoaded,
+      riveArtboard: name == 'terry' ? _terryArtboard : _nigelArtboard,
+      skeletonsLoaded: _skeletonsLoaded,
+      skeleton: name == 'terry' ? _terrySkeleton : _nigelSkeleton,
+      boneAnimation: name == 'terry' ? _terryAnimation : _nigelAnimation,
+      boneKey: name == 'terry' ? _terryBoneKey : _nigelBoneKey,
+      mouthShape: name == 'terry' ? _terryMouth : _nigelMouth,
+      blinkState: name == 'terry' ? _terryBlinkState : _nigelBlinkState,
+      bobMultiplier: reactionMods['bobMultiplier'] ?? 1.0,
+      swayMultiplier: reactionMods['swayMultiplier'] ?? 1.0,
+      leanOffset: reactionMods['leanOffset'] ?? 0.0,
+      bodyScale: name == 'terry' ? _terryBodyScale : _nigelBodyScale,
+      bodyOffset: name == 'terry' ? _terryBodyOffset : _nigelBodyOffset,
+      eyesScale: name == 'terry' ? _terryEyesScale : _nigelEyesScale,
+      eyesOffset: name == 'terry' ? _terryEyesOffset : _nigelEyesOffset,
+      mouthScale: name == 'terry' ? _terryMouthScale : _nigelMouthScale,
+      mouthOffset: name == 'terry' ? _terryMouthOffset : _nigelMouthOffset,
+      onBodyScaleUpdate: (scale) {
+        setState(() {
+          if (name == 'terry') {
+            _terryBodyScale = scale.clamp(_minScale, _maxScale);
+          } else {
+            _nigelBodyScale = scale.clamp(_minScale, _maxScale);
+          }
+        });
       },
-    );
-  }
-
-  /// Helper: Build the character component stack (extracted for MirrorAnimationBuilder)
-  Widget _buildCharacterStack({
-    required String name,
-    required Map<String, dynamic> config,
-    required String blinkState,
-    required double eyeX,
-    required double eyeY,
-    required double headBob,
-    required double bodyScale,
-    required Offset bodyOffset,
-    required double eyesScale,
-    required Offset eyesOffset,
-    required double mouthScale,
-    required Offset mouthOffset,
-    required double? baseLeft,
-    required double? baseRight,
-    required double baseBottom,
-    required Color bodyColor,
-    required Color eyesColor,
-    required Color mouthColor,
-    required Image body,
-    required String mouth,
-  }) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // BODY - main character sprite
-        Positioned(
-          left: baseLeft != null ? baseLeft + bodyOffset.dx : null,
-          right: baseRight != null ? baseRight - bodyOffset.dx : null,
-          bottom: baseBottom + bodyOffset.dy,
-          child: _buildResizableComponent(
-            label: '${name.toUpperCase()} BODY',
-            color: bodyColor,
-            scale: bodyScale,
-            onScaleUpdate: (scale) {
-              setState(() {
-                if (name == 'terry') {
-                  _terryBodyScale = scale.clamp(_minScale, _maxScale);
-                } else {
-                  _nigelBodyScale = scale.clamp(_minScale, _maxScale);
-                }
-              });
-            },
-            onDragUpdate: (delta) {
-              setState(() {
-                if (name == 'terry') {
-                  _terryBodyOffset += delta;
-                } else {
-                  _nigelBodyOffset += Offset(-delta.dx, delta.dy);
-                }
-              });
-            },
-            onReset: () {
-              setState(() {
-                if (name == 'terry') {
-                  _terryBodyScale = _defaultScale;
-                  _terryBodyOffset = Offset.zero;
-                } else {
-                  _nigelBodyScale = _defaultScale;
-                  _nigelBodyOffset = Offset.zero;
-                }
-              });
-            },
-            child: SizedBox(
-              // Use proper aspect ratio: Nigel is landscape (1.83:1), Terry is portrait
-              width: config['bodyAspectRatio'] != null ? 400 : 300,
-              height: config['bodyAspectRatio'] != null ? (400 / (config['bodyAspectRatio'] as double)).round().toDouble() : 400,
-              child: body,
-            ),
-          ),
-        ),
-
-        // EYES - if character has separate eye sprites
-        if (config['hasEyes'] == true)
-          Builder(builder: (context) {
-            // Calculate container height based on aspect ratio
-            final containerHeight = config['bodyAspectRatio'] != null
-                ? (400 / (config['bodyAspectRatio'] as double)).round().toDouble()
-                : 400.0;
-            return Positioned(
-              left: baseLeft != null
-                  ? baseLeft + bodyOffset.dx + (config['eyesX'] as double) + eyeX + eyesOffset.dx
-                  : null,
-              right: baseRight != null
-                  ? baseRight - bodyOffset.dx - (config['eyesX'] as double) - eyeX - eyesOffset.dx
-                  : null,
-              bottom: baseBottom + bodyOffset.dy + (containerHeight - (config['eyesY'] as double) - eyeY) + eyesOffset.dy,
-            child: _buildResizableComponent(
-              label: '${name.toUpperCase()} EYES',
-              color: eyesColor,
-              scale: eyesScale,
-              onScaleUpdate: (scale) {
-                setState(() {
-                  if (name == 'terry') {
-                    _terryEyesScale = scale.clamp(_minScale, _maxScale);
-                  } else {
-                    _nigelEyesScale = scale.clamp(_minScale, _maxScale);
-                  }
-                });
-              },
-              onDragUpdate: (delta) {
-                setState(() {
-                  if (name == 'terry') {
-                    _terryEyesOffset += delta;
-                  } else {
-                    _nigelEyesOffset += Offset(-delta.dx, delta.dy);
-                  }
-                });
-              },
-              onReset: () {
-                setState(() {
-                  if (name == 'terry') {
-                    _terryEyesScale = _defaultScale;
-                    _terryEyesOffset = Offset.zero;
-                  } else {
-                    _nigelEyesScale = _defaultScale;
-                    _nigelEyesOffset = Offset.zero;
-                  }
-                });
-              },
-              child: Image.asset(
-                'assets/characters/$name/eyes/eyes_$blinkState.png',
-                width: config['eyesWidth'] as double,  // Scale applied by Transform.scale
-                height: config['eyesHeight'] as double,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 100,
-                  height: 40,
-                  color: eyesColor.withOpacity(0.3),
-                  child: const Center(child: Text('EYES', style: TextStyle(color: Colors.white, fontSize: 10))),
-                ),
-              ),
-            ),
-            ); // Close Positioned
-          }), // Close Builder
-
-        // MOUTH - lip sync shapes
-        // Check if mouth is full-frame (already positioned in image) or cropped (needs positioning)
-        if (config['mouthFullFrame'] == true)
-          // FULL-FRAME MOUTH (Nigel) - overlay at same position as body, no manual positioning needed
-          Positioned(
-            left: baseLeft != null ? baseLeft + bodyOffset.dx : null,
-            right: baseRight != null ? baseRight - bodyOffset.dx : null,
-            bottom: baseBottom + bodyOffset.dy,
-            child: IgnorePointer(
-              child: SizedBox(
-                // Match body container size for proper overlay
-                width: config['bodyAspectRatio'] != null ? 400 : 300,
-                height: config['bodyAspectRatio'] != null ? (400 / (config['bodyAspectRatio'] as double)).round().toDouble() : 400,
-                child: Image.asset(
-                  'assets/characters/$name/mouth_shapes/$mouth.png',
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                ),
-              ),
-            ),
-          )
-        else
-          // CROPPED MOUTH (Terry) - needs manual positioning
-          Positioned(
-            left: baseLeft != null
-                ? baseLeft + bodyOffset.dx + (config['mouthX'] as double) + mouthOffset.dx
-                : null,
-            right: baseRight != null
-                ? baseRight - bodyOffset.dx - (config['mouthX'] as double) - mouthOffset.dx
-                : null,
-            bottom: baseBottom + bodyOffset.dy + (400 - (config['mouthY'] as double)) + mouthOffset.dy,
-            child: _buildResizableComponent(
-              label: '${name.toUpperCase()} MOUTH',
-              color: mouthColor,
-              scale: mouthScale,
-              onScaleUpdate: (scale) {
-                setState(() {
-                  if (name == 'terry') {
-                    _terryMouthScale = scale.clamp(_minScale, _maxScale);
-                  } else {
-                    _nigelMouthScale = scale.clamp(_minScale, _maxScale);
-                  }
-                });
-              },
-              onDragUpdate: (delta) {
-                setState(() {
-                  if (name == 'terry') {
-                    _terryMouthOffset += delta;
-                  } else {
-                    _nigelMouthOffset += Offset(-delta.dx, delta.dy);
-                  }
-                });
-              },
-              onReset: () {
-                setState(() {
-                  if (name == 'terry') {
-                    _terryMouthScale = _defaultScale;
-                    _terryMouthOffset = Offset.zero;
-                  } else {
-                    _nigelMouthScale = _defaultScale;
-                    _nigelMouthOffset = Offset.zero;
-                  }
-                });
-              },
-              child: Image.asset(
-                'assets/characters/$name/mouth_shapes/$mouth.png',
-                width: config['mouthWidth'] as double,  // Scale applied by Transform.scale
-                height: config['mouthHeight'] as double,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 80,
-                  height: 40,
-                  color: mouthColor.withOpacity(0.3),
-                  child: const Center(child: Text('MOUTH', style: TextStyle(color: Colors.white, fontSize: 10))),
-                ),
-              ),
-            ),
-          ),
-      ],
-    ); // Close Stack
-  }
-
-  /// Build a resizable component with visible handles
-  Widget _buildResizableComponent({
-    required String label,
-    required Color color,
-    required double scale,
-    required void Function(double) onScaleUpdate,
-    required void Function(Offset) onDragUpdate,
-    required VoidCallback onReset,
-    required Widget child,
-  }) {
-    const handleSize = 14.0;
-
-    return Listener(
-      onPointerSignal: (event) {
-        if (event is PointerScrollEvent) {
-          final delta = event.scrollDelta.dy > 0 ? -0.05 : 0.05;
-          onScaleUpdate(scale + delta);
-        }
+      onBodyDragUpdate: (delta) {
+        setState(() {
+          if (name == 'terry') {
+            _terryBodyOffset += delta;
+          } else {
+            _nigelBodyOffset += Offset(-delta.dx, delta.dy);
+          }
+        });
       },
-      // APPLY SCALE via Transform.scale - this is what makes resize actually work!
-      child: Transform.scale(
-        scale: scale,
-        alignment: Alignment.bottomCenter,
-        child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Main content with border
-          MouseRegion(
-            cursor: SystemMouseCursors.grab,
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onPanUpdate: (details) => onDragUpdate(details.delta),
-              onDoubleTap: onReset,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: color.withOpacity(0.7), width: 2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: child,
-              ),
-            ),
-          ),
-
-          // Label tag
-          Positioned(
-            top: -18,
-            left: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(4),
-                  topRight: Radius.circular(4),
-                ),
-              ),
-              child: Text(
-                '$label ${(scale * 100).toInt()}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-
-          // Corner resize handles
-          // Top-left
-          Positioned(
-            top: -handleSize / 2,
-            left: -handleSize / 2,
-            child: _buildHandle(
-              cursor: SystemMouseCursors.resizeUpLeft,
-              color: color,
-              size: handleSize,
-              onDrag: (delta) => onScaleUpdate(scale + (-delta.dx + -delta.dy) * 0.005),
-            ),
-          ),
-          // Top-right
-          Positioned(
-            top: -handleSize / 2,
-            right: -handleSize / 2,
-            child: _buildHandle(
-              cursor: SystemMouseCursors.resizeUpRight,
-              color: color,
-              size: handleSize,
-              onDrag: (delta) => onScaleUpdate(scale + (delta.dx + -delta.dy) * 0.005),
-            ),
-          ),
-          // Bottom-left
-          Positioned(
-            bottom: -handleSize / 2,
-            left: -handleSize / 2,
-            child: _buildHandle(
-              cursor: SystemMouseCursors.resizeDownLeft,
-              color: color,
-              size: handleSize,
-              onDrag: (delta) => onScaleUpdate(scale + (-delta.dx + delta.dy) * 0.005),
-            ),
-          ),
-          // Bottom-right
-          Positioned(
-            bottom: -handleSize / 2,
-            right: -handleSize / 2,
-            child: _buildHandle(
-              cursor: SystemMouseCursors.resizeDownRight,
-              color: color,
-              size: handleSize,
-              onDrag: (delta) => onScaleUpdate(scale + (delta.dx + delta.dy) * 0.005),
-            ),
-          ),
-        ],
-      ), // Close Stack
-      ), // Close Transform.scale
-    ); // Close Listener
-  }
-
-  /// Build a single resize handle
-  Widget _buildHandle({
-    required MouseCursor cursor,
-    required Color color,
-    required double size,
-    required void Function(Offset) onDrag,
-  }) {
-    return MouseRegion(
-      cursor: cursor,
-      child: GestureDetector(
-        onPanUpdate: (details) => onDrag(details.delta),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: color,
-            border: Border.all(color: Colors.white, width: 1.5),
-            borderRadius: BorderRadius.circular(3),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.4),
-                blurRadius: 2,
-                offset: const Offset(1, 1),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCharacter(String name, [Image? body, String? mouth]) {
-    final artboard = name == 'terry' ? _terryArtboard : _nigelArtboard;
-    final skeleton = name == 'terry' ? _terrySkeleton : _nigelSkeleton;
-    final mouthShape = mouth ?? (name == 'terry' ? _terryMouth : _nigelMouth);
-
-    // Priority 1: Rive bone animation (if .riv file has valid artboards)
-    if (_riveLoaded && artboard != null) {
-      return _buildRiveCharacter(name, artboard);
-    }
-
-    // Priority 2: Custom bone animation system (if skeletons loaded)
-    if (_skeletonsLoaded && skeleton != null) {
-      return _buildBoneCharacter(name, skeleton);
-    }
-
-    // Priority 3: PNG fallback - show error placeholder since body images removed
-    return Container(
-      width: 300,
-      height: 400,
-      color: Colors.red.withOpacity(0.3),
-      child: Center(
-        child: Text(
-          '$name\nSkeleton not loaded',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
+      onBodyReset: () {
+        setState(() {
+          if (name == 'terry') {
+            _terryBodyScale = _defaultScale;
+            _terryBodyOffset = Offset.zero;
+          } else {
+            _nigelBodyScale = _defaultScale;
+            _nigelBodyOffset = Offset.zero;
+          }
+        });
+      },
+      onEyesScaleUpdate: (scale) {
+        setState(() {
+          if (name == 'terry') {
+            _terryEyesScale = scale.clamp(_minScale, _maxScale);
+          } else {
+            _nigelEyesScale = scale.clamp(_minScale, _maxScale);
+          }
+        });
+      },
+      onEyesDragUpdate: (delta) {
+        setState(() {
+          if (name == 'terry') {
+            _terryEyesOffset += delta;
+          } else {
+            _nigelEyesOffset += Offset(-delta.dx, delta.dy);
+          }
+        });
+      },
+      onEyesReset: () {
+        setState(() {
+          if (name == 'terry') {
+            _terryEyesScale = _defaultScale;
+            _terryEyesOffset = Offset.zero;
+          } else {
+            _nigelEyesScale = _defaultScale;
+            _nigelEyesOffset = Offset.zero;
+          }
+        });
+      },
+      onMouthScaleUpdate: (scale) {
+        setState(() {
+          if (name == 'terry') {
+            _terryMouthScale = scale.clamp(_minScale, _maxScale);
+          } else {
+            _nigelMouthScale = scale.clamp(_minScale, _maxScale);
+          }
+        });
+      },
+      onMouthDragUpdate: (delta) {
+        setState(() {
+          if (name == 'terry') {
+            _terryMouthOffset += delta;
+          } else {
+            _nigelMouthOffset += Offset(-delta.dx, delta.dy);
+          }
+        });
+      },
+      onMouthReset: () {
+        setState(() {
+          if (name == 'terry') {
+            _terryMouthScale = _defaultScale;
+            _terryMouthOffset = Offset.zero;
+          } else {
+            _nigelMouthScale = _defaultScale;
+            _nigelMouthOffset = Offset.zero;
+          }
+        });
+      },
     );
   }
 
   /// Build character using Rive bone animation
-  Widget _buildRiveCharacter(String name, Artboard artboard) {
-    return SizedBox(
-      width: 300,
-      height: 400,
-      child: Rive(
-        artboard: artboard,
-        fit: BoxFit.contain,
-        alignment: Alignment.bottomCenter,
-      ),
-    );
-  }
-
-  /// Build character using custom bone animation system
-  /// Wrapped in resizable component for drag/scale support
-  Widget _buildBoneCharacter(String name, Skeleton skeleton) {
-    final animation = name == 'terry' ? _terryAnimation : _nigelAnimation;
-    final key = name == 'terry' ? _terryBoneKey : _nigelBoneKey;
-    final basePath = 'assets/characters/$name';
-
-    // Get scale and offset for this character
-    final bodyScale = name == 'terry' ? _terryBodyScale : _nigelBodyScale;
-    final bodyOffset = name == 'terry' ? _terryBodyOffset : _nigelBodyOffset;
-    final bodyColor = name == 'terry' ? Colors.cyan : Colors.lightGreen;
-
-    return Transform.translate(
-      offset: bodyOffset,
-      child: _buildResizableComponent(
-        label: '${name.toUpperCase()} CHARACTER',
-        color: bodyColor,
-        scale: bodyScale,
-        onScaleUpdate: (scale) {
-          setState(() {
-            if (name == 'terry') {
-              _terryBodyScale = scale.clamp(_minScale, _maxScale);
-            } else {
-              _nigelBodyScale = scale.clamp(_minScale, _maxScale);
-            }
-          });
-        },
-        onDragUpdate: (delta) {
-          setState(() {
-            if (name == 'terry') {
-              _terryBodyOffset += delta;
-            } else {
-              _nigelBodyOffset += Offset(-delta.dx, delta.dy);
-            }
-          });
-        },
-        onReset: () {
-          setState(() {
-            if (name == 'terry') {
-              _terryBodyScale = _defaultScale;
-              _terryBodyOffset = Offset.zero;
-            } else {
-              _nigelBodyScale = _defaultScale;
-              _nigelBodyOffset = Offset.zero;
-            }
-          });
-        },
-        child: SizedBox(
-          width: skeleton.canvasSize.width * 0.6,
-          height: skeleton.canvasSize.height * 0.6,
-          child: BoneAnimatorWidget(
-            key: key,
-            skeleton: skeleton,
-            currentAnimation: animation,
-            assetBasePath: basePath,
-            scale: 0.6,
-            showBones: false,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Build character using transparent PNG images (fallback)
-  /// Uses simple_animations MirrorAnimationBuilder for organic idle motion
-  Widget _buildPngCharacter(String name, Image body, String mouth) {
-    final config = _characterConfig[name] ?? _characterConfig['terry']!;
-    final blinkState = name == 'terry' ? _terryBlinkState : _nigelBlinkState;
-
-    // Select the appropriate MovieTween for this character
-    final idleTween = name == 'terry' ? terryIdleTween : nigelIdleTween;
-
-    // Apply reaction modifiers
-    final reactionMods = _getReactionModifiers(name);
-    final bobMod = reactionMods['bobMultiplier'] ?? 1.0;
-    final swayMod = reactionMods['swayMultiplier'] ?? 1.0;
-    final leanOffset = reactionMods['leanOffset'] ?? 0.0;
-
-    return MirrorAnimationBuilder<Movie>(
-      tween: idleTween,
-      duration: idleTween.duration,
-      builder: (context, value, child) {
-        // Extract animation values from MovieTween
-        final breathY = value.get<double>('breathY');
-        final eyeX = value.get<double>('eyeX');
-        final eyeY = value.get<double>('eyeY');
-        final headBob = value.get<double>('headBob');
-        final sway = value.get<double>('sway');
-        final lean = value.get<double>('lean');
-
-        return Transform(
-          // Apply multiple transforms: sway, lean, and bob (modified by reactions)
-          transform: Matrix4.identity()
-            ..translate(sway * swayMod, breathY + headBob * bobMod)
-            ..rotateZ((lean * 0.01) + leanOffset),
-          alignment: Alignment.bottomCenter,
-          child: SizedBox(
-            width: 300,
-            height: 400,
-            child: Stack(
-              children: [
-                // Use transparent full-body character image
-                Positioned.fill(
-                  child: body,
-                ),
-
-                // Eyes layer (if character has separate eye sprites)
-                if (config['hasEyes'] == true)
-                  Positioned(
-                    left: (config['eyesX'] as double) + eyeX,
-                    top: (config['eyesY'] as double) + eyeY + headBob * 0.3,
-                    child: Image.asset(
-                      'assets/characters/$name/eyes/eyes_$blinkState.png',
-                      width: config['eyesWidth'] as double,
-                      height: config['eyesHeight'] as double,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    ),
-                  ),
-
-                // Mouth layer (swapped based on current phoneme)
-                Positioned(
-                  left: config['mouthX'] as double,
-                  top: (config['mouthY'] as double) + headBob * 0.3,
-                  child: Image.asset(
-                    'assets/characters/$name/mouth_shapes/$mouth.png',
-                    width: config['mouthWidth'] as double,
-                    height: config['mouthHeight'] as double,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   // ==================== SUBTITLE SYSTEM ====================
 
@@ -4178,9 +3132,10 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     });
 
     // Auto-hide after duration (default: estimate based on text length)
-    final displayDuration = duration ?? Duration(
-      milliseconds: 2000 + (text.length * 50), // ~50ms per character
-    );
+    final displayDuration = duration ??
+        Duration(
+          milliseconds: 2000 + (text.length * 50), // ~50ms per character
+        );
 
     _subtitleTimer = Timer(displayDuration, () {
       hideSubtitle();
@@ -4206,125 +3161,10 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
   /// Build the subtitle bar widget
   Widget _buildSubtitleBar() {
-    // Speaker colors: Terry = cyan/blue, Nigel = green, Narrator = white
-    Color speakerColor;
-    String displayName;
-
-    switch (_subtitleSpeaker.toLowerCase()) {
-      case 'terry':
-        speakerColor = Colors.cyan;
-        displayName = 'TERRY';
-        break;
-      case 'nigel':
-        speakerColor = Colors.lightGreen;
-        displayName = 'NIGEL';
-        break;
-      default:
-        speakerColor = Colors.white70;
-        displayName = _subtitleSpeaker.toUpperCase();
-    }
-
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 40,
-      child: AnimatedOpacity(
-        opacity: _subtitleVisible ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 800),
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.75),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: speakerColor.withOpacity(0.5),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: speakerColor.withOpacity(0.2),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Speaker name
-                if (displayName.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      displayName,
-                      style: TextStyle(
-                        color: speakerColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ),
-                // Dialogue text with formatting support
-                _buildFormattedText(_subtitleText),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Parse and build formatted text with *italics* and **bold** support
-  Widget _buildFormattedText(String text) {
-    if (text.isEmpty) return const SizedBox.shrink();
-
-    final List<InlineSpan> spans = [];
-    final RegExp pattern = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*|([^*]+)');
-
-    for (final match in pattern.allMatches(text)) {
-      if (match.group(1) != null) {
-        // **bold**
-        spans.add(TextSpan(
-          text: match.group(1),
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ));
-      } else if (match.group(2) != null) {
-        // *italic*
-        spans.add(TextSpan(
-          text: match.group(2),
-          style: const TextStyle(
-            fontStyle: FontStyle.italic,
-            color: Colors.white,
-          ),
-        ));
-      } else if (match.group(3) != null) {
-        // regular text
-        spans.add(TextSpan(
-          text: match.group(3),
-          style: const TextStyle(color: Colors.white),
-        ));
-      }
-    }
-
-    return RichText(
-      textAlign: TextAlign.center,
-      text: TextSpan(
-        style: const TextStyle(
-          fontSize: 18,
-          height: 1.4,
-          fontFamily: 'sans-serif',
-        ),
-        children: spans,
-      ),
+    return WFLSubtitleBar(
+      visible: _subtitleVisible,
+      speaker: _subtitleSpeaker,
+      text: _subtitleText,
     );
   }
 
@@ -4332,132 +3172,75 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
   /// SFX button data: name, icon, color, hotkey
   static const List<Map<String, dynamic>> _sfxButtons = [
-    {'name': 'rimshot', 'icon': Icons.music_note, 'color': 0xFFFF6B6B, 'key': '1', 'label': 'Rimshot'},
-    {'name': 'sad_trombone', 'icon': Icons.sentiment_dissatisfied, 'color': 0xFF4ECDC4, 'key': '2', 'label': 'Sad Trombone'},
-    {'name': 'airhorn', 'icon': Icons.volume_up, 'color': 0xFFFFE66D, 'key': '3', 'label': 'Airhorn'},
-    {'name': 'laugh_track', 'icon': Icons.emoji_emotions, 'color': 0xFF95E1D3, 'key': '4', 'label': 'Laugh Track'},
-    {'name': 'drumroll', 'icon': Icons.sports_martial_arts, 'color': 0xFFF38181, 'key': '5', 'label': 'Drumroll'},
-    {'name': 'whoosh', 'icon': Icons.air, 'color': 0xFF7B68EE, 'key': '6', 'label': 'Whoosh'},
-    {'name': 'ding', 'icon': Icons.notifications_active, 'color': 0xFFFFD93D, 'key': '7', 'label': 'Ding'},
-    {'name': 'buzzer', 'icon': Icons.cancel, 'color': 0xFFFF4757, 'key': '8', 'label': 'Buzzer'},
+    {
+      'name': 'rimshot',
+      'icon': Icons.music_note,
+      'color': 0xFFFF6B6B,
+      'key': '1',
+      'label': 'Rimshot'
+    },
+    {
+      'name': 'sad_trombone',
+      'icon': Icons.sentiment_dissatisfied,
+      'color': 0xFF4ECDC4,
+      'key': '2',
+      'label': 'Sad Trombone'
+    },
+    {
+      'name': 'airhorn',
+      'icon': Icons.volume_up,
+      'color': 0xFFFFE66D,
+      'key': '3',
+      'label': 'Airhorn'
+    },
+    {
+      'name': 'laugh_track',
+      'icon': Icons.emoji_emotions,
+      'color': 0xFF95E1D3,
+      'key': '4',
+      'label': 'Laugh Track'
+    },
+    {
+      'name': 'drumroll',
+      'icon': Icons.sports_martial_arts,
+      'color': 0xFFF38181,
+      'key': '5',
+      'label': 'Drumroll'
+    },
+    {
+      'name': 'whoosh',
+      'icon': Icons.air,
+      'color': 0xFF7B68EE,
+      'key': '6',
+      'label': 'Whoosh'
+    },
+    {
+      'name': 'ding',
+      'icon': Icons.notifications_active,
+      'color': 0xFFFFD93D,
+      'key': '7',
+      'label': 'Ding'
+    },
+    {
+      'name': 'buzzer',
+      'icon': Icons.cancel,
+      'color': 0xFFFF4757,
+      'key': '8',
+      'label': 'Buzzer'
+    },
   ];
 
   /// Build the SFX trigger buttons panel
   Widget _buildSfxPanel() {
-    return Positioned(
-      top: 20,
-      right: 20,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Header with collapse toggle
-          GestureDetector(
-            onTap: () => setState(() => _sfxPanelExpanded = !_sfxPanelExpanded),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.purple.withOpacity(0.5)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.music_note, color: Colors.purple, size: 18),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'SFX',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _sfxPanelExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.white70,
-                    size: 18,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Expandable button grid
-          if (_sfxPanelExpanded)
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.85),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.purple.withOpacity(0.2),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: _sfxButtons.sublist(0, 4).map((sfx) => _buildSfxButton(sfx)).toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: _sfxButtons.sublist(4, 8).map((sfx) => _buildSfxButton(sfx)).toList(),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+    return WFLSfxPanel(
+      isExpanded: _sfxPanelExpanded,
+      onToggleExpanded: () =>
+          setState(() => _sfxPanelExpanded = !_sfxPanelExpanded),
+      sfxButtons: _sfxButtons,
+      onPlaySfx: _playSfx,
     );
   }
-
-  /// Build individual SFX button
-  Widget _buildSfxButton(Map<String, dynamic> sfx) {
-    final color = Color(sfx['color'] as int);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Tooltip(
-        message: '${sfx['label']} (${sfx['key']})',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _playSfx(sfx['name'] as String),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [color.withOpacity(0.8), color.withOpacity(0.5)],
-                ),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: color, width: 1),
-                boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(sfx['icon'] as IconData, color: Colors.white, size: 22),
-                  const SizedBox(height: 2),
-                  Text(sfx['key'] as String, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // ==================== PLAY/PAUSE DIALOGUE ====================
 
   /// Play SFX by name
   void _playSfx(String name) {
@@ -4469,85 +3252,11 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
 
   /// Build the Play/Pause button
   Widget _buildPlayPauseButton() {
-    final isPlaying = _dialoguePlaying && !_dialoguePaused;
-    final isPaused = _dialoguePlaying && _dialoguePaused;
-
-    return Positioned(
-      bottom: 120,
-      right: 20,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Main Play/Pause button
-          GestureDetector(
-            onTap: _toggleDialogue,
-            child: Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isPlaying
-                      ? [Colors.green.shade400, Colors.green.shade700]
-                      : isPaused
-                          ? [Colors.orange.shade400, Colors.orange.shade700]
-                          : [Colors.purple.shade400, Colors.purple.shade700],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isPlaying ? Colors.green : isPaused ? Colors.orange : Colors.purple).withOpacity(0.4),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ],
-                border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-              ),
-              child: Icon(
-                isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.white,
-                size: 36,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Status label
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              isPlaying ? 'PLAYING' : isPaused ? 'PAUSED' : 'DIALOGUE',
-              style: TextStyle(
-                color: isPlaying ? Colors.green : isPaused ? Colors.orange : Colors.white70,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          // Stop button (only when playing or paused)
-          if (_dialoguePlaying)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: GestureDetector(
-                onTap: _stopDialogue,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.red.shade700,
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
-                  ),
-                  child: const Icon(Icons.stop, color: Colors.white, size: 20),
-                ),
-              ),
-            ),
-        ],
-      ),
+    return WFLPlayPauseButton(
+      dialoguePlaying: _dialoguePlaying,
+      dialoguePaused: _dialoguePaused,
+      onToggle: _toggleDialogue,
+      onStop: _stopDialogue,
     );
   }
 
@@ -4622,7 +3331,8 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     final cleanText = text.replaceAll(RegExp(r'\*+'), '');
 
     // Generate and play voice audio using ElevenLabs TTS
-    debugPrint('TTS: ttsEnabled=${WFLConfig.ttsEnabled}, key=${WFLConfig.elevenLabsKey.substring(0, 8)}...');
+    debugPrint(
+        'TTS: ttsEnabled=${WFLConfig.ttsEnabled}, key=${WFLConfig.elevenLabsKey.substring(0, 8)}...');
     if (WFLConfig.ttsEnabled) {
       try {
         final voiceId = speaker == 'terry'
@@ -4631,16 +3341,21 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
         debugPrint('TTS: Generating for $speaker with voice $voiceId');
 
         // Generate speech audio (returns PCM 44100Hz 16-bit mono)
-        final pcmBytes = await _autoRoast.generateSpeech(cleanText, voiceId, character: speaker);
+        final pcmBytes = await _autoRoast.generateSpeech(cleanText, voiceId,
+            character: speaker);
         debugPrint('TTS: Got ${pcmBytes.length} bytes');
 
-        if (pcmBytes.isNotEmpty && mounted && _dialoguePlaying && !_dialoguePaused) {
+        if (pcmBytes.isNotEmpty &&
+            mounted &&
+            _dialoguePlaying &&
+            !_dialoguePaused) {
           // Convert PCM to WAV by adding header
           final wavBytes = _pcmToWav(pcmBytes);
 
           // Save to temp file and play
           final tempDir = await getTemporaryDirectory();
-          final audioFile = File('${tempDir.path}/dialogue_${speaker}_$_dialogueIndex.wav');
+          final audioFile =
+              File('${tempDir.path}/dialogue_${speaker}_$_dialogueIndex.wav');
           await audioFile.writeAsBytes(wavBytes);
 
           // Set mouth to talking
@@ -4702,20 +3417,24 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
     final header = <int>[
       // RIFF header
       0x52, 0x49, 0x46, 0x46, // "RIFF"
-      fileSize & 0xFF, (fileSize >> 8) & 0xFF, (fileSize >> 16) & 0xFF, (fileSize >> 24) & 0xFF,
+      fileSize & 0xFF, (fileSize >> 8) & 0xFF, (fileSize >> 16) & 0xFF,
+      (fileSize >> 24) & 0xFF,
       0x57, 0x41, 0x56, 0x45, // "WAVE"
       // fmt subchunk
       0x66, 0x6D, 0x74, 0x20, // "fmt "
       16, 0, 0, 0, // Subchunk1Size (16 for PCM)
       1, 0, // AudioFormat (1 = PCM)
       numChannels, 0, // NumChannels
-      sampleRate & 0xFF, (sampleRate >> 8) & 0xFF, (sampleRate >> 16) & 0xFF, (sampleRate >> 24) & 0xFF,
-      byteRate & 0xFF, (byteRate >> 8) & 0xFF, (byteRate >> 16) & 0xFF, (byteRate >> 24) & 0xFF,
+      sampleRate & 0xFF, (sampleRate >> 8) & 0xFF, (sampleRate >> 16) & 0xFF,
+      (sampleRate >> 24) & 0xFF,
+      byteRate & 0xFF, (byteRate >> 8) & 0xFF, (byteRate >> 16) & 0xFF,
+      (byteRate >> 24) & 0xFF,
       blockAlign, 0, // BlockAlign
       bitsPerSample, 0, // BitsPerSample
       // data subchunk
       0x64, 0x61, 0x74, 0x61, // "data"
-      dataSize & 0xFF, (dataSize >> 8) & 0xFF, (dataSize >> 16) & 0xFF, (dataSize >> 24) & 0xFF,
+      dataSize & 0xFF, (dataSize >> 8) & 0xFF, (dataSize >> 16) & 0xFF,
+      (dataSize >> 24) & 0xFF,
     ];
 
     return [...header, ...pcmBytes];
@@ -4758,54 +3477,4 @@ class _WFLAnimatorState extends State<WFLAnimator> with TickerProviderStateMixin
       elapsed += interval;
     });
   }
-}
-
-/// Mouth cue for lip-sync timing
-class MouthCue {
-  final double time;
-  final String mouth;
-
-  MouthCue(this.time, this.mouth);
-}
-
-/// Button hit region for tap detection
-class ButtonHitRegion {
-  final double x;
-  final double y;
-  final double radius;
-  final String name;
-
-  const ButtonHitRegion(this.x, this.y, this.radius, this.name);
-}
-
-/// Queue item for back-to-back roasts
-class QueueItem {
-  final String id;
-  final String path;
-  final String filename;
-  final int window;
-  final Uint8List? thumbnail;
-
-  QueueItem({
-    required this.id,
-    required this.path,
-    required this.filename,
-    required this.window,
-    this.thumbnail,
-  });
-}
-
-/// Export quality presets
-class ExportPreset {
-  final String name;
-  final String resolution;
-  final int fps;
-  final int crf;
-  final String description;
-
-  const ExportPreset(this.name, this.resolution, this.fps, this.crf, this.description);
-
-  static const youtube = ExportPreset('YouTube', '1080x720', 30, 18, '~120MB/min, crisp');
-  static const stream = ExportPreset('Stream', '1080x720', 30, 24, '~80MB/min, fast');
-  static const gif = ExportPreset('GIF Loop', '720x480', 15, 28, '~10MB, viral bait');
 }

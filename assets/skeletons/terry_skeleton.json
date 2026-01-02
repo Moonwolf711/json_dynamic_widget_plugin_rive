@@ -31,7 +31,12 @@
       },
       "length": 120,
       "images": [
-        "layers/layer_05.png"
+        "layers/layer_05.png",
+        "layers/layer_10.png",
+        "layers/layer_11.png",
+        "layers/layer_13.png",
+        "layers/layer_18.png",
+        "layers/layer_19.png"
       ]
     },
     {

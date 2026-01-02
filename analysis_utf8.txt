@@ -1,0 +1,184 @@
+﻿Analyzing flutter_viewer...                                     
+
+   info - Dangling library doc comment - lib\api\api.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\api\models.dart:1:1 - dangling_library_doc_comments
+   info - Library names are not necessary - lib\bone_animation.dart:3:9 - unnecessary_library_name
+   info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead - lib\bone_animation.dart:462:19 - deprecated_member_use
+   info - Dangling library doc comment - lib\character_prompts.dart:1:1 - dangling_library_doc_comments
+   info - Library names are not necessary - lib\dev_commands.dart:7:9 - unnecessary_library_name
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\dev_commands.dart:232:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\dev_commands.dart:233:26 - deprecated_member_use
+   info - The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\mouth_painter.dart:1:8 - unnecessary_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\mouth_painter.dart:220:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\mouth_painter.dart:227:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\mouth_painter.dart:234:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\mouth_painter.dart:248:31 - deprecated_member_use
+   info - Dangling library doc comment - lib\record_stub.dart:1:1 - dangling_library_doc_comments
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:48:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:51:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:64:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:67:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:165:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:170:5 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\rive_path_effect.dart:202:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\rive_path_effect.dart:203:27 - deprecated_member_use
+   info - Dangling library doc comment - lib\rive_stub.dart:1:1 - dangling_library_doc_comments
+   info - Unnecessary use of getter and setter to wrap a field - lib\sound_effects.dart:59:12 - unnecessary_getters_setters
+warning - The declaration '_processMessage' isn't referenced - lib\wfl_ai_chat_dev.dart:117:16 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_ai_chat_dev.dart:206:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_ai_chat_dev.dart:278:37 - deprecated_member_use
+   info - 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead - lib\wfl_animations.dart:89:15 - deprecated_member_use
+warning - Unused import: 'package:flutter/foundation.dart' - lib\wfl_animator.dart:4:8 - unused_import
+warning - Unused import: 'wfl_ai_chat.dart' - lib\wfl_animator.dart:28:8 - unused_import
+warning - The value of the field '_riveFile' isn't used - lib\wfl_animator.dart:61:13 - unused_field
+warning - The value of the field '_riveController' isn't used - lib\wfl_animator.dart:99:27 - unused_field
+warning - The value of the field '_presetsKey' isn't used - lib\wfl_animator.dart:134:23 - unused_field
+warning - The value of the field '_terryEyeX' isn't used - lib\wfl_animator.dart:175:10 - unused_field
+warning - The value of the field '_terryEyeY' isn't used - lib\wfl_animator.dart:176:10 - unused_field
+warning - The value of the field '_nigelEyeX' isn't used - lib\wfl_animator.dart:177:10 - unused_field
+warning - The value of the field '_nigelEyeY' isn't used - lib\wfl_animator.dart:178:10 - unused_field
+   info - The private field _terryHeadBob could be 'final' - lib\wfl_animator.dart:179:10 - prefer_final_fields
+warning - The value of the field '_terryHeadBob' isn't used - lib\wfl_animator.dart:179:10 - unused_field
+   info - The private field _nigelHeadBob could be 'final' - lib\wfl_animator.dart:180:10 - prefer_final_fields
+warning - The value of the field '_nigelHeadBob' isn't used - lib\wfl_animator.dart:180:10 - unused_field
+   info - The private field _terrySway could be 'final' - lib\wfl_animator.dart:181:10 - prefer_final_fields
+warning - The value of the field '_terrySway' isn't used - lib\wfl_animator.dart:181:10 - unused_field
+   info - The private field _nigelSway could be 'final' - lib\wfl_animator.dart:182:10 - prefer_final_fields
+warning - The value of the field '_nigelSway' isn't used - lib\wfl_animator.dart:182:10 - unused_field
+   info - The private field _terryLean could be 'final' - lib\wfl_animator.dart:183:10 - prefer_final_fields
+warning - The value of the field '_terryLean' isn't used - lib\wfl_animator.dart:183:10 - unused_field
+   info - The private field _nigelLean could be 'final' - lib\wfl_animator.dart:184:10 - prefer_final_fields
+warning - The value of the field '_nigelLean' isn't used - lib\wfl_animator.dart:184:10 - unused_field
+   info - The private field _breathOffset could be 'final' - lib\wfl_animator.dart:185:10 - prefer_final_fields
+warning - The value of the field '_breathOffset' isn't used - lib\wfl_animator.dart:185:10 - unused_field
+warning - The value of the field '_layerOrder' isn't used - lib\wfl_animator.dart:267:42 - unused_field
+   info - The private field _warpSpeed could be 'final' - lib\wfl_animator.dart:312:10 - prefer_final_fields
+warning - The value of the field '_focusWindow' isn't used - lib\wfl_animator.dart:319:8 - unused_field
+warning - The value of the field '_lastTranscription' isn't used - lib\wfl_animator.dart:331:11 - unused_field
+warning - The value of the field '_wsConnected' isn't used - lib\wfl_animator.dart:335:8 - unused_field
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:850:22 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:856:22 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:862:22 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:965:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1143:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1179:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1203:26 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1234:26 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1244:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1278:28 - use_build_context_synchronously
+warning - The declaration '_onRiveInit' isn't referenced - lib\wfl_animator.dart:1285:8 - unused_element
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1558:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1575:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1584:28 - use_build_context_synchronously
+warning - The value of the local variable 'frameFile' isn't used - lib\wfl_animator.dart:1659:13 - unused_local_variable
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:1673:55 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:1674:60 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:1675:60 - curly_braces_in_flow_control_structures
+warning - The declaration '_triggerReaction' isn't referenced - lib\wfl_animator.dart:1736:8 - unused_element
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1843:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:1988:28 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2321:33 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2322:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2323:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2324:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2325:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2326:37 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2327:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2328:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator.dart:2329:29 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:2377:60 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\wfl_animator.dart:2471:13 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:2771:41 - deprecated_member_use
+warning - The value of the local variable 'basePath' isn't used - lib\wfl_animator.dart:2863:11 - unused_local_variable
+warning - The value of the local variable 'preset' isn't used - lib\wfl_animator.dart:2913:11 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3026:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3068:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3071:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3075:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3080:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3081:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3148:23 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3149:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3161:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3166:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3199:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator.dart:3200:28 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3214:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3274:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3289:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3478:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3520:35 - deprecated_member_use
+warning - The declaration '_buildCharacterWithComponents' isn't referenced - lib\wfl_animator.dart:3550:10 - unused_element
+   info - 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead - lib\wfl_animator.dart:3592:15 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3750:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3829:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3874:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:3977:37 - deprecated_member_use
+warning - A value for optional parameter 'body' isn't ever given - lib\wfl_animator.dart:3988:47 - unused_element_parameter
+warning - The value of the local variable 'mouthShape' isn't used - lib\wfl_animator.dart:3991:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4007:25 - deprecated_member_use
+warning - The declaration '_buildPngCharacter' isn't referenced - lib\wfl_animator.dart:4096:10 - unused_element
+   info - 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead - lib\wfl_animator.dart:4124:15 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4241:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4244:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4249:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4359:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4361:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4392:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4394:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4397:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4441:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4441:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4445:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4500:98 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4505:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4519:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_animator.dart:4543:60 - deprecated_member_use
+warning - The value of the field '_riveController' isn't used - lib\wfl_controller.dart:32:28 - unused_field
+warning - The declaration '_processPhoneme' isn't referenced - lib\wfl_controller.dart:78:8 - unused_element
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:91:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:125:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:178:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:206:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:254:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:258:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:294:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:338:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:339:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:340:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:341:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:342:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:343:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:344:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:352:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:359:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:67:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:68:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:69:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:70:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:72:7 - avoid_print
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:105:33 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:106:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:107:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:108:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:109:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:110:37 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:111:38 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_focus_mode.dart:181:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_focus_mode.dart:216:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_focus_mode.dart:262:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_focus_mode.dart:285:33 - deprecated_member_use
+   info - Dangling library doc comment - lib\wfl_google_sign_in_stub.dart:1:1 - dangling_library_doc_comments
+warning - Unused import: 'dart:typed_data' - lib\wfl_image_resizer.dart:3:8 - unused_import
+   info - The import of 'package:flutter/rendering.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\wfl_image_resizer.dart:5:8 - unnecessary_import
+warning - Unused import: 'package:path_provider/path_provider.dart' - lib\wfl_image_resizer.dart:7:8 - unused_import
+warning - The value of the field '_imageFile' isn't used - lib\wfl_image_resizer.dart:32:9 - unused_field
+warning - The value of the field '_isDragging' isn't used - lib\wfl_image_resizer.dart:39:8 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_image_resizer.dart:276:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_image_resizer.dart:436:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_image_resizer.dart:459:28 - deprecated_member_use
+   info - The imported package 'path' isn't a dependency of the importing package - lib\wfl_layer_manager.dart:5:8 - depend_on_referenced_packages
+warning - The value of the field '_live' isn't used - lib\wfl_template.dart:44:8 - unused_field
+warning - The declaration '_focus' isn't referenced - lib\wfl_template.dart:196:8 - unused_element
+warning - The value of the field '_authSubscription' isn't used - lib\wfl_uploader.dart:23:30 - unused_field
+
