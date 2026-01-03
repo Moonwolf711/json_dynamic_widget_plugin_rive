@@ -67,16 +67,17 @@ class _TerryLiveViewerState extends State<TerryLiveViewer>
   late Animation<double> _sparkleAnimation;
 
   static const _visemeToFile = {
-    'neutral_closed': 'x',
-    'ah_open': 'a',
-    'ee_wide': 'e',
-    'oh': 'o',
-    'oo': 'u',
-    'mp': 'm',
-    'kg': 'a',
+    'neutral_closed': 'neutral_closed',
+    'ah_open': 'ah_open',
+    'ee_wide': 'ee_wide',
+    'ee': 'ee',
+    'oh': 'oh',
+    'oo': 'oo',
+    'mp': 'mp',
+    'kg': 'kg',
     'tn': 'l',
     'fv': 'f',
-    'breath': 'x',
+    'breath': 'neutral_closed',
   };
 
   @override
@@ -450,21 +451,16 @@ class _TerryLiveViewerState extends State<TerryLiveViewer>
                                   ),
                                 ),
 
-                              // Mouth — HARDCODED FOR DEBUG
+                              // Mouth
                               Positioned(
                                 bottom: 45,
                                 child: Image.asset(
-                                  'assets/characters/terry/mouth_shapes/x.png',
-                                  width: 100,
-                                  height: 70,
+                                  '${widget.assetPath}/mouth_shapes/$mouthFile.png',
+                                  width: 85,
+                                  height: 55,
                                   fit: BoxFit.contain,
                                   gaplessPlayback: true,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    color: Colors.red,
-                                    width: 100,
-                                    height: 70,
-                                    child: const Center(child: Text('PATH DEAD', style: TextStyle(color: Colors.white, fontSize: 10))),
-                                  ),
+                                  errorBuilder: (_, __, ___) => _placeholder(85, 55, mouthFile),
                                 ),
                               ),
 

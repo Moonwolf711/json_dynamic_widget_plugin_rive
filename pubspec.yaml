@@ -84,7 +84,3 @@ flutter:
     - assets/audio/
     - assets/sfx/ # Comedy sound effects for Show Mode
     - assets/sfx/background/ # Background music tracks
-    - assets/terry/
-    - assets/terry/mouths/
-    - assets/nigel/
-    - assets/nigel/mouths/

@@ -44,7 +44,7 @@ const kPhonemeToViseme = {
 /// )
 /// ```
 class LipsyncMouth extends StatefulWidget {
-  /// Character name for asset path (e.g., 'terry' -> assets/terry/mouths/)
+  /// Character name for asset path (e.g., 'terry' -> assets/characters/terry/mouth_shapes/)
   final String character;
 
   /// Stream of viseme indices (0-8) from Rhubarb or animation controller

@@ -90,7 +90,7 @@ class TerryLive extends ConsumerWidget {
                     Positioned(
                       bottom: 40,
                       child: Image.asset(
-                        'assets/terry/mouths/${visemeNames[s.visemeIdx]}.png',
+                        'assets/characters/terry/mouth_shapes/${visemeNames[s.visemeIdx]}.png',
                         gaplessPlayback: true,
                         width: 80,
                         height: 50,
