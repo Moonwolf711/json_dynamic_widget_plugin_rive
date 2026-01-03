@@ -384,8 +384,7 @@ class AnimatedSkeletonState extends State<AnimatedSkeleton>
   }
 
   /// Change character state
-  @override
-  void setState(CharacterState state) {
+  void setCharacterState(CharacterState state) {
     _stateMachine.setState(state);
   }
 

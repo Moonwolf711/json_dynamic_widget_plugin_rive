@@ -1,0 +1,261 @@
+Analyzing flutter_viewer...                                     
+
+   info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead - lib\bone_animation.dart:462:19 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\dev_commands.dart:232:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\dev_commands.dart:233:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\mouth_painter.dart:219:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\mouth_painter.dart:226:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\mouth_painter.dart:233:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\mouth_painter.dart:247:31 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:48:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:51:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:64:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:67:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:165:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\rive_path_effect.dart:170:5 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\rive_path_effect.dart:202:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\rive_path_effect.dart:203:27 - deprecated_member_use
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:98:1 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:98:3 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:98:5 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:98:7 - expected_executable
+   info - An uninitialized variable should have an explicit type annotation - lib\rive_stub.dart:98:9 - prefer_typing_uninitialized_variables
+   info - Missing type annotation - lib\rive_stub.dart:98:9 - strict_top_level_inference
+   info - The variable name 'HEAD' isn't a lowerCamelCase identifier - lib\rive_stub.dart:98:9 - non_constant_identifier_names
+  error - Expected to find ';' - lib\rive_stub.dart:98:9 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\rive_stub.dart:98:9 - missing_const_final_var_or_type
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:189:1 - expected_executable
+  error - The '===' operator is not supported - lib\rive_stub.dart:189:1 - unsupported_operator
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:189:4 - expected_executable
+  error - The '===' operator is not supported - lib\rive_stub.dart:189:4 - unsupported_operator
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:189:7 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:190:1 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:190:4 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:190:7 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\rive_stub.dart:190:9 - expected_executable
+   info - An uninitialized variable should have an explicit type annotation - lib\rive_stub.dart:190:10 - prefer_typing_uninitialized_variables
+   info - Missing type annotation - lib\rive_stub.dart:190:10 - strict_top_level_inference
+  error - Expected to find ';' - lib\rive_stub.dart:190:10 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\rive_stub.dart:190:10 - missing_const_final_var_or_type
+  error - The argument type 'Null Function()' can't be assigned to the parameter type 'CharacterState'.  - lib\skeleton_animation.dart:380:16 - argument_type_not_assignable
+  error - 'AnimatedSkeletonState.setState' ('void Function(CharacterState)') isn't a valid override of 'State.setState' ('void Function(void Function())') - lib\skeleton_animation.dart:388:8 - invalid_override
+   info - Unnecessary use of getter and setter to wrap a field - lib\sound_effects.dart:59:12 - unnecessary_getters_setters
+warning - The declaration '_processMessage' isn't referenced - lib\wfl_ai_chat_dev.dart:117:16 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_ai_chat_dev.dart:206:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_ai_chat_dev.dart:278:37 - deprecated_member_use
+   info - 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead - lib\wfl_animations.dart:199:15 - deprecated_member_use
+warning - The value of the field '_riveFile' isn't used - lib\wfl_animator_temp.dart:63:13 - unused_field
+warning - The value of the field '_riveLoaded' isn't used - lib\wfl_animator_temp.dart:68:8 - unused_field
+warning - The value of the field '_riveController' isn't used - lib\wfl_animator_temp.dart:101:27 - unused_field
+warning - The value of the field '_presetsKey' isn't used - lib\wfl_animator_temp.dart:139:23 - unused_field
+warning - The value of the field '_terryBlinkState' isn't used - lib\wfl_animator_temp.dart:157:10 - unused_field
+warning - The value of the field '_nigelBlinkState' isn't used - lib\wfl_animator_temp.dart:158:10 - unused_field
+warning - The value of the field '_terryBodyScale' isn't used - lib\wfl_animator_temp.dart:165:16 - unused_field
+warning - The value of the field '_terryBodyOffset' isn't used - lib\wfl_animator_temp.dart:166:16 - unused_field
+warning - The value of the field '_terryEyesScale' isn't used - lib\wfl_animator_temp.dart:167:16 - unused_field
+warning - The value of the field '_terryEyesOffset' isn't used - lib\wfl_animator_temp.dart:168:16 - unused_field
+warning - The value of the field '_terryMouthScale' isn't used - lib\wfl_animator_temp.dart:169:16 - unused_field
+warning - The value of the field '_terryMouthOffset' isn't used - lib\wfl_animator_temp.dart:170:16 - unused_field
+warning - The value of the field '_nigelBodyScale' isn't used - lib\wfl_animator_temp.dart:173:16 - unused_field
+warning - The value of the field '_nigelBodyOffset' isn't used - lib\wfl_animator_temp.dart:174:16 - unused_field
+warning - The value of the field '_nigelEyesScale' isn't used - lib\wfl_animator_temp.dart:175:16 - unused_field
+warning - The value of the field '_nigelEyesOffset' isn't used - lib\wfl_animator_temp.dart:176:16 - unused_field
+warning - The value of the field '_nigelMouthScale' isn't used - lib\wfl_animator_temp.dart:177:16 - unused_field
+warning - The value of the field '_nigelMouthOffset' isn't used - lib\wfl_animator_temp.dart:178:16 - unused_field
+warning - The value of the field '_terryEyeX' isn't used - lib\wfl_animator_temp.dart:182:10 - unused_field
+warning - The value of the field '_terryEyeY' isn't used - lib\wfl_animator_temp.dart:183:10 - unused_field
+warning - The value of the field '_nigelEyeX' isn't used - lib\wfl_animator_temp.dart:184:10 - unused_field
+warning - The value of the field '_nigelEyeY' isn't used - lib\wfl_animator_temp.dart:185:10 - unused_field
+warning - The value of the field '_terryHeadBob' isn't used - lib\wfl_animator_temp.dart:186:16 - unused_field
+warning - The value of the field '_nigelHeadBob' isn't used - lib\wfl_animator_temp.dart:187:16 - unused_field
+warning - The value of the field '_terrySway' isn't used - lib\wfl_animator_temp.dart:188:16 - unused_field
+warning - The value of the field '_nigelSway' isn't used - lib\wfl_animator_temp.dart:189:16 - unused_field
+warning - The value of the field '_terryLean' isn't used - lib\wfl_animator_temp.dart:190:16 - unused_field
+warning - The value of the field '_nigelLean' isn't used - lib\wfl_animator_temp.dart:191:16 - unused_field
+warning - The value of the field '_breathOffset' isn't used - lib\wfl_animator_temp.dart:192:16 - unused_field
+warning - The value of the field '_minScale' isn't used - lib\wfl_animator_temp.dart:195:23 - unused_field
+warning - The value of the field '_maxScale' isn't used - lib\wfl_animator_temp.dart:196:23 - unused_field
+warning - The value of the field '_defaultScale' isn't used - lib\wfl_animator_temp.dart:197:23 - unused_field
+warning - The value of the field '_focusWindow' isn't used - lib\wfl_animator_temp.dart:282:8 - unused_field
+warning - The value of the field '_lastTranscription' isn't used - lib\wfl_animator_temp.dart:294:11 - unused_field
+warning - The value of the field '_wsConnected' isn't used - lib\wfl_animator_temp.dart:298:8 - unused_field
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1187:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1223:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1247:26 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1278:26 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1288:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1322:28 - use_build_context_synchronously
+warning - The declaration '_onRiveInit' isn't referenced - lib\wfl_animator_temp.dart:1329:8 - unused_element
+  error - The method 'setMouthShape' isn't defined for the type 'BoneAnimatorWidgetState' - lib\wfl_animator_temp.dart:1367:37 - undefined_method
+  error - The method 'setMouthShape' isn't defined for the type 'BoneAnimatorWidgetState' - lib\wfl_animator_temp.dart:1377:37 - undefined_method
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1611:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1628:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1637:28 - use_build_context_synchronously
+warning - The value of the local variable 'frameFile' isn't used - lib\wfl_animator_temp.dart:1713:13 - unused_local_variable
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:1730:11 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:1732:11 - curly_braces_in_flow_control_structures
+warning - The declaration '_triggerReaction' isn't referenced - lib\wfl_animator_temp.dart:1797:8 - unused_element
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:1907:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:2055:28 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:2413:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:2415:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:2417:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:2419:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:2421:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:2423:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:2425:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_animator_temp.dart:2426:29 - curly_braces_in_flow_control_structures
+warning - The value of the local variable 'basePath' isn't used - lib\wfl_animator_temp.dart:2659:11 - unused_local_variable
+warning - The value of the local variable 'preset' isn't used - lib\wfl_animator_temp.dart:2714:11 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\wfl_animator_temp.dart:2786:7 - use_build_context_synchronously
+warning - The declaration '_buildWarpHUD' isn't referenced - lib\wfl_animator_temp.dart:3006:10 - unused_element
+  error - The body might complete normally, causing 'null' to be returned, but the return type, 'Widget', is a potentially non-nullable type - lib\wfl_animator_temp.dart:3024:10 - body_might_complete_normally
+warning - The value of the local variable 'reactionMods' isn't used - lib\wfl_animator_temp.dart:3025:11 - unused_local_variable
+  error - Expected a class member - lib\wfl_animator_temp.dart:3027:8 - expected_class_member
+  error - Expected a class member - lib\wfl_animator_temp.dart:3028:5 - expected_class_member
+  error - Expected a class member - lib\wfl_animator_temp.dart:3028:6 - expected_class_member
+  error - Undefined name '_subtitleTimer' - lib\wfl_animator_temp.dart:3035:5 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3036:5 - undefined_function
+  error - Undefined name '_subtitleSpeaker' - lib\wfl_animator_temp.dart:3037:7 - undefined_identifier
+  error - Undefined name '_subtitleText' - lib\wfl_animator_temp.dart:3038:7 - undefined_identifier
+  error - Undefined name '_subtitleVisible' - lib\wfl_animator_temp.dart:3039:7 - undefined_identifier
+  error - Undefined name '_subtitleTimer' - lib\wfl_animator_temp.dart:3048:5 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3055:5 - undefined_function
+  error - Undefined name '_subtitleVisible' - lib\wfl_animator_temp.dart:3056:7 - undefined_identifier
+  error - Undefined name '_subtitleTimer' - lib\wfl_animator_temp.dart:3062:5 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3063:5 - undefined_function
+  error - Undefined name '_subtitleVisible' - lib\wfl_animator_temp.dart:3064:7 - undefined_identifier
+  error - Undefined name '_subtitleText' - lib\wfl_animator_temp.dart:3065:7 - undefined_identifier
+  error - Undefined name '_subtitleSpeaker' - lib\wfl_animator_temp.dart:3066:7 - undefined_identifier
+  error - Undefined name '_subtitleVisible' - lib\wfl_animator_temp.dart:3073:16 - undefined_identifier
+  error - Undefined name '_subtitleSpeaker' - lib\wfl_animator_temp.dart:3074:16 - undefined_identifier
+  error - Undefined name '_subtitleText' - lib\wfl_animator_temp.dart:3075:13 - undefined_identifier
+warning - The declaration '_sfxButtons' isn't referenced - lib\wfl_animator_temp.dart:3082:36 - unused_element
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3169:30 - undefined_function
+  error - Undefined name '_sfxPanelExpanded' - lib\wfl_animator_temp.dart:3169:45 - undefined_identifier
+  error - Undefined name '_sfxPanelExpanded' - lib\wfl_animator_temp.dart:3169:66 - undefined_identifier
+  error - Undefined name '_sfxPanelExpanded' - lib\wfl_animator_temp.dart:3171:19 - undefined_identifier
+  error - Undefined name '_sfxPanelExpanded' - lib\wfl_animator_temp.dart:3179:15 - undefined_identifier
+  error - Undefined name '_actionDispatcher' - lib\wfl_animator_temp.dart:3185:29 - undefined_identifier
+  error - Undefined name '_terryAnimation' - lib\wfl_animator_temp.dart:3209:9 - undefined_identifier
+  error - Undefined name '_nigelAnimation' - lib\wfl_animator_temp.dart:3210:9 - undefined_identifier
+  error - Undefined name '_terryAnimation' - lib\wfl_animator_temp.dart:3213:9 - undefined_identifier
+  error - Undefined name '_nigelAnimation' - lib\wfl_animator_temp.dart:3214:9 - undefined_identifier
+  error - Undefined name '_terryAnimation' - lib\wfl_animator_temp.dart:3217:9 - undefined_identifier
+  error - Undefined name '_nigelAnimation' - lib\wfl_animator_temp.dart:3218:9 - undefined_identifier
+  error - Undefined name '_terryAnimation' - lib\wfl_animator_temp.dart:3221:9 - undefined_identifier
+  error - Undefined name '_nigelAnimation' - lib\wfl_animator_temp.dart:3222:9 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3227:5 - undefined_function
+  error - Undefined name '_dialoguePlaying' - lib\wfl_animator_temp.dart:3235:24 - undefined_identifier
+  error - Undefined name '_dialoguePaused' - lib\wfl_animator_temp.dart:3236:23 - undefined_identifier
+  error - Undefined name '_dialoguePlaying' - lib\wfl_animator_temp.dart:3244:10 - undefined_identifier
+  error - Undefined name '_dialoguePaused' - lib\wfl_animator_temp.dart:3247:16 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3258:5 - undefined_function
+  error - Undefined name '_dialoguePlaying' - lib\wfl_animator_temp.dart:3259:7 - undefined_identifier
+  error - Undefined name '_dialoguePaused' - lib\wfl_animator_temp.dart:3260:7 - undefined_identifier
+  error - Undefined name '_dialogueIndex' - lib\wfl_animator_temp.dart:3261:7 - undefined_identifier
+  error - Undefined name '_dialogueTimer' - lib\wfl_animator_temp.dart:3269:5 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3270:5 - undefined_function
+  error - Undefined name '_dialoguePaused' - lib\wfl_animator_temp.dart:3270:20 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3276:5 - undefined_function
+  error - Undefined name '_dialoguePaused' - lib\wfl_animator_temp.dart:3276:20 - undefined_identifier
+  error - Undefined name '_dialogueTimer' - lib\wfl_animator_temp.dart:3283:5 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3284:5 - undefined_function
+  error - Undefined name '_dialoguePlaying' - lib\wfl_animator_temp.dart:3285:7 - undefined_identifier
+  error - Undefined name '_dialoguePaused' - lib\wfl_animator_temp.dart:3286:7 - undefined_identifier
+  error - Undefined name '_dialogueIndex' - lib\wfl_animator_temp.dart:3287:7 - undefined_identifier
+  error - Undefined name '_dialoguePlaying' - lib\wfl_animator_temp.dart:3295:10 - undefined_identifier
+  error - Undefined name '_dialoguePaused' - lib\wfl_animator_temp.dart:3295:30 - undefined_identifier
+  error - Undefined name '_dialogueIndex' - lib\wfl_animator_temp.dart:3297:9 - undefined_identifier
+  error - Undefined name '_sampleDialogue' - lib\wfl_animator_temp.dart:3297:27 - undefined_identifier
+  error - Undefined name '_dialogueIndex' - lib\wfl_animator_temp.dart:3299:7 - undefined_identifier
+  error - Undefined name '_sampleDialogue' - lib\wfl_animator_temp.dart:3302:18 - undefined_identifier
+  error - Undefined name '_dialogueIndex' - lib\wfl_animator_temp.dart:3302:34 - undefined_identifier
+  error - Undefined name 'pcmBytes' - lib\wfl_animator_temp.dart:3321:32 - undefined_identifier
+  error - Undefined name 'pcmBytes' - lib\wfl_animator_temp.dart:3323:13 - undefined_identifier
+  error - Undefined name 'mounted' - lib\wfl_animator_temp.dart:3324:13 - undefined_identifier
+  error - Undefined name '_dialoguePlaying' - lib\wfl_animator_temp.dart:3325:13 - undefined_identifier
+  error - Undefined name '_dialoguePaused' - lib\wfl_animator_temp.dart:3326:14 - undefined_identifier
+  error - Undefined name 'pcmBytes' - lib\wfl_animator_temp.dart:3328:38 - undefined_identifier
+  error - Undefined name '_dialogueIndex' - lib\wfl_animator_temp.dart:3333:58 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3337:11 - undefined_function
+  error - Undefined name '_terryMouth' - lib\wfl_animator_temp.dart:3339:15 - undefined_identifier
+  error - Undefined name '_nigelMouth' - lib\wfl_animator_temp.dart:3341:15 - undefined_identifier
+  error - Undefined name '_dialogueIndex' - lib\wfl_animator_temp.dart:3362:9 - undefined_identifier
+  error - Undefined name '_dialogueIndex' - lib\wfl_animator_temp.dart:3372:5 - undefined_identifier
+  error - The argument type 'double' can't be assigned to the parameter type 'int'.  - lib\wfl_animator_temp.dart:3376:42 - argument_type_not_assignable
+  error - Undefined name '_dialogueTimer' - lib\wfl_animator_temp.dart:3377:5 - undefined_identifier
+  error - Undefined name '_dialoguePlaying' - lib\wfl_animator_temp.dart:3429:35 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3432:9 - undefined_function
+  error - Undefined name '_terryMouth' - lib\wfl_animator_temp.dart:3434:13 - undefined_identifier
+  error - Undefined name '_nigelMouth' - lib\wfl_animator_temp.dart:3436:13 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\wfl_animator_temp.dart:3442:7 - undefined_function
+  error - Undefined name '_terryMouth' - lib\wfl_animator_temp.dart:3445:11 - undefined_identifier
+  error - Undefined name '_nigelMouth' - lib\wfl_animator_temp.dart:3447:11 - undefined_identifier
+  error - Expected a method, getter, setter or operator declaration - lib\wfl_animator_temp.dart:3455:1 - expected_executable
+  error - Target of URI doesn't exist: 'wfl_animator.dart' - lib\wfl_boot.dart:4:8 - uri_does_not_exist
+  error - The name 'WFLAnimator' isn't a class - lib\wfl_boot.dart:48:46 - creation_with_non_type
+  error - The name 'WFLAnimator' isn't a class - lib\wfl_boot.dart:84:46 - creation_with_non_type
+warning - The value of the field '_riveController' isn't used - lib\wfl_controller.dart:32:28 - unused_field
+warning - The declaration '_processPhoneme' isn't referenced - lib\wfl_controller.dart:78:8 - unused_element
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:91:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:125:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:178:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:206:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:254:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:258:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:294:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:338:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:339:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:340:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:341:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:342:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:343:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:344:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:352:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_controller.dart:359:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:67:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:68:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:69:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:70:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\wfl_data_binding.dart:72:7 - avoid_print
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:107:40 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:108:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:109:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:110:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:111:37 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\wfl_focus_mode.dart:112:38 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_focus_mode.dart:182:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_focus_mode.dart:217:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_focus_mode.dart:263:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_focus_mode.dart:286:33 - deprecated_member_use
+warning - The value of the field '_imageFile' isn't used - lib\wfl_image_resizer.dart:29:9 - unused_field
+warning - The value of the field '_isDragging' isn't used - lib\wfl_image_resizer.dart:36:8 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_image_resizer.dart:273:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_image_resizer.dart:433:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\wfl_image_resizer.dart:456:28 - deprecated_member_use
+   info - The imported package 'path' isn't a dependency of the importing package - lib\wfl_layer_manager.dart:5:8 - depend_on_referenced_packages
+warning - The value of the field '_live' isn't used - lib\wfl_template.dart:44:8 - unused_field
+warning - The declaration '_focus' isn't referenced - lib\wfl_template.dart:196:8 - unused_element
+warning - The value of the field '_authSubscription' isn't used - lib\wfl_uploader.dart:23:30 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_hotkey_hints.dart:26:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_play_pause_button.dart:52:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_play_pause_button.dart:58:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_play_pause_button.dart:72:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_play_pause_button.dart:104:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_portholes.dart:93:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_portholes.dart:135:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_queue_panel.dart:107:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_sfx_panel.dart:31:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_sfx_panel.dart:33:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_sfx_panel.dart:64:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_sfx_panel.dart:66:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_sfx_panel.dart:69:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_sfx_panel.dart:118:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_sfx_panel.dart:118:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_sfx_panel.dart:124:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_subtitle_bar.dart:49:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_subtitle_bar.dart:52:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\wfl_subtitle_bar.dart:57:39 - deprecated_member_use
+warning - The value of the local variable 'isHighlighted' isn't used - lib\widgets\wfl_taskbar.dart:211:11 - unused_local_variable
+

@@ -95,7 +95,6 @@ class Rive extends StatelessWidget {
     return const SizedBox.shrink();
   }
 }
-<<<<<<< HEAD
 
 /// Stub FileLoader for Rive 0.14.0 API
 class FileLoader {
@@ -186,5 +185,3 @@ enum Fit {
   none,
   scaleDown,
 }
-=======
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc

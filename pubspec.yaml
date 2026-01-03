@@ -1,21 +1,17 @@
 name: wfl_viewer
 description: WFL Animation Viewer - Rive + Auto-Roast Pipeline
-publish_to: 'none'
+publish_to: "none"
 version: 3.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
   # Rive animation (0.13.x - works with our API)
-<<<<<<< HEAD
   rive: ^0.14.0
-=======
-  rive: 0.13.20
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
   # HTTP for API calls
   http: ^1.1.0
@@ -33,14 +29,11 @@ dependencies:
   ffmpeg_kit_flutter: ^6.0.0
 
   # File picking
-<<<<<<< HEAD
   file_picker: ^10.3.8
-=======
-  file_picker: ^8.0.0
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
 
   # Path utilities
   path_provider: ^2.1.0
+  path: ^1.9.1
 
   # YouTube upload
   googleapis: ^15.0.0
@@ -74,9 +67,9 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/wfl.riv  # compiled export from Rive (.rivo is source, .riv is binary)
-    - assets/skeletons/  # Custom bone animation skeletons
-    - assets/path_effects/  # Custom Lua path effects
+    - assets/wfl.riv # compiled export from Rive (.rivo is source, .riv is binary)
+    - assets/skeletons/ # Custom bone animation skeletons
+    - assets/path_effects/ # Custom Lua path effects
     - assets/backgrounds/
     - assets/characters/
     - assets/characters/nigel/
@@ -89,5 +82,5 @@ flutter:
     - assets/characters/terry/terry sitting transp/
     - assets/characters/nigel/nigel transparent/
     - assets/audio/
-    - assets/sfx/  # Comedy sound effects for Show Mode
-    - assets/sfx/background/  # Background music tracks
+    - assets/sfx/ # Comedy sound effects for Show Mode
+    - assets/sfx/background/ # Background music tracks

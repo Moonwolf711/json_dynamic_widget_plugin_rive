@@ -1,67 +1,15 @@
 {
   "name": "terry",
-<<<<<<< HEAD
-  "canvasSize": {
-    "width": 512,
-    "height": 768
-  },
-  "bones": [
-    {
-      "name": "root",
-      "position": {
-        "x": 256,
-        "y": 600
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 1.0
-      },
-=======
   "canvasSize": { "width": 512, "height": 768 },
   "bones": [
     {
       "name": "root",
       "position": { "x": 256, "y": 600 },
       "pivot": { "x": 0.5, "y": 1.0 },
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
       "length": 50,
       "images": []
     },
     {
-<<<<<<< HEAD
-      "name": "body",
-      "parent": "root",
-      "position": {
-        "x": 0,
-        "y": -100
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.8
-      },
-      "length": 120,
-      "images": [
-        "layers/layer_05.png",
-        "layers/layer_10.png",
-        "layers/layer_11.png",
-        "layers/layer_13.png",
-        "layers/layer_18.png",
-        "layers/layer_19.png"
-      ]
-    },
-    {
-      "name": "head",
-      "parent": "body",
-      "position": {
-        "x": 0,
-        "y": -120
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.8
-      },
-      "length": 60,
-=======
       "name": "hips",
       "parent": "root",
       "position": { "x": 0, "y": -50 },
@@ -83,7 +31,13 @@
       "position": { "x": 0, "y": -70 },
       "pivot": { "x": 0.5, "y": 1.0 },
       "length": 50,
-      "images": ["layers/layer_04.png", "layers/layer_05.png", "layers/layer_06.png"]
+      "images": [
+        "layers/layer_04.png",
+        "layers/layer_05.png",
+        "layers/layer_06.png",
+        "layers/layer_19.png",
+        "layers/layer_20.png"
+      ]
     },
     {
       "name": "neck",
@@ -102,66 +56,20 @@
       "images": ["layers/layer_08.png", "layers/layer_09.png", "layers/layer_10.png"]
     },
     {
-      "name": "eyes",
-      "parent": "head",
-      "position": { "x": 0, "y": -15 },
-      "pivot": { "x": 0.5, "y": 0.5 },
-      "length": 10,
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
-      "images": []
-    },
-    {
       "name": "jaw",
       "parent": "head",
-<<<<<<< HEAD
-      "position": {
-        "x": 0,
-        "y": 30
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.0
-      },
-=======
       "position": { "x": 0, "y": 30 },
       "pivot": { "x": 0.5, "y": 0.0 },
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
       "length": 20,
       "images": []
     },
     {
       "name": "mouth",
       "parent": "jaw",
-<<<<<<< HEAD
-      "position": {
-        "x": 0,
-        "y": 10
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "length": 10,
-      "images": []
-    },
-    {
-      "name": "left_arm",
-      "parent": "body",
-      "position": {
-        "x": -60,
-        "y": -40
-      },
-      "pivot": {
-        "x": 1.0,
-        "y": 0.2
-      },
-      "length": 50,
-      "images": []
-=======
       "position": { "x": 0, "y": 10 },
       "pivot": { "x": 0.5, "y": 0.5 },
       "length": 10,
-      "images": ["mouth_shapes/x.png"]
+      "images": []
     },
     {
       "name": "left_shoulder",
@@ -178,37 +86,10 @@
       "pivot": { "x": 1.0, "y": 0.2 },
       "length": 50,
       "images": ["layers/layer_12.png", "layers/layer_13.png"]
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     },
     {
       "name": "left_hand",
       "parent": "left_arm",
-<<<<<<< HEAD
-      "position": {
-        "x": -20,
-        "y": 50
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.0
-      },
-      "length": 25,
-      "images": []
-    },
-    {
-      "name": "right_arm",
-      "parent": "body",
-      "position": {
-        "x": 60,
-        "y": -40
-      },
-      "pivot": {
-        "x": 0.0,
-        "y": 0.2
-      },
-      "length": 50,
-      "images": []
-=======
       "position": { "x": -20, "y": 50 },
       "pivot": { "x": 0.5, "y": 0.0 },
       "length": 25,
@@ -229,28 +110,14 @@
       "pivot": { "x": 0.0, "y": 0.2 },
       "length": 50,
       "images": ["layers/layer_16.png", "layers/layer_17.png"]
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     },
     {
       "name": "right_hand",
       "parent": "right_arm",
-<<<<<<< HEAD
-      "position": {
-        "x": 20,
-        "y": 50
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.0
-      },
-      "length": 25,
-      "images": []
-=======
       "position": { "x": 20, "y": 50 },
       "pivot": { "x": 0.5, "y": 0.0 },
       "length": 25,
       "images": ["layers/layer_18.png"]
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
     }
   ],
   "animations": {
@@ -261,76 +128,31 @@
         {
           "time": 0.0,
           "transforms": {
-<<<<<<< HEAD
-            "body": {
-              "rotation": 0.0
-            },
-            "head": {
-              "rotation": 0.0
-            },
-            "left_arm": {
-              "rotation": 0.05
-            },
-            "right_arm": {
-              "rotation": -0.05
-            }
-=======
             "spine": { "rotation": 0.0 },
             "chest": { "rotation": 0.0 },
             "head": { "rotation": 0.0 },
             "left_arm": { "rotation": 0.05 },
             "right_arm": { "rotation": -0.05 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           }
         },
         {
           "time": 1.5,
           "transforms": {
-<<<<<<< HEAD
-            "body": {
-              "rotation": 0.02
-            },
-            "head": {
-              "rotation": -0.03
-            },
-            "left_arm": {
-              "rotation": -0.05
-            },
-            "right_arm": {
-              "rotation": 0.05
-            }
-=======
             "spine": { "rotation": 0.02 },
             "chest": { "rotation": 0.03 },
             "head": { "rotation": -0.02 },
             "left_arm": { "rotation": -0.05 },
             "right_arm": { "rotation": 0.05 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           }
         },
         {
           "time": 3.0,
           "transforms": {
-<<<<<<< HEAD
-            "body": {
-              "rotation": 0.0
-            },
-            "head": {
-              "rotation": 0.0
-            },
-            "left_arm": {
-              "rotation": 0.05
-            },
-            "right_arm": {
-              "rotation": -0.05
-            }
-=======
             "spine": { "rotation": 0.0 },
             "chest": { "rotation": 0.0 },
             "head": { "rotation": 0.0 },
             "left_arm": { "rotation": 0.05 },
             "right_arm": { "rotation": -0.05 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           }
         }
       ]
@@ -342,316 +164,44 @@
         {
           "time": 0.0,
           "transforms": {
-<<<<<<< HEAD
-            "head": {
-              "rotation": 0.0
-            },
-            "jaw": {
-              "rotation": 0.0
-            },
-            "body": {
-              "rotation": 0.0
-            },
-            "left_arm": {
-              "rotation": 0.1
-            },
-            "right_arm": {
-              "rotation": -0.15
-            }
-=======
             "head": { "rotation": 0.0 },
             "jaw": { "rotation": 0.0 },
             "chest": { "rotation": 0.0 },
             "left_arm": { "rotation": 0.1 },
             "right_arm": { "rotation": -0.15 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           }
         },
         {
           "time": 0.15,
           "transforms": {
-<<<<<<< HEAD
-            "head": {
-              "rotation": 0.03
-            },
-            "jaw": {
-              "rotation": 0.08
-            },
-            "body": {
-              "rotation": 0.02
-            },
-            "left_arm": {
-              "rotation": 0.2
-            },
-            "right_arm": {
-              "rotation": -0.05
-            }
-=======
             "head": { "rotation": 0.03 },
             "jaw": { "rotation": 0.08 },
             "chest": { "rotation": 0.02 },
             "left_arm": { "rotation": 0.2 },
             "right_arm": { "rotation": -0.05 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           }
         },
         {
           "time": 0.3,
           "transforms": {
-<<<<<<< HEAD
-            "head": {
-              "rotation": -0.02
-            },
-            "jaw": {
-              "rotation": 0.0
-            },
-            "body": {
-              "rotation": -0.01
-            },
-            "left_arm": {
-              "rotation": 0.05
-            },
-            "right_arm": {
-              "rotation": -0.2
-            }
-=======
             "head": { "rotation": -0.02 },
             "jaw": { "rotation": 0.0 },
             "chest": { "rotation": -0.01 },
             "left_arm": { "rotation": 0.05 },
             "right_arm": { "rotation": -0.2 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           }
         },
         {
           "time": 0.5,
           "transforms": {
-<<<<<<< HEAD
-            "head": {
-              "rotation": 0.0
-            },
-            "jaw": {
-              "rotation": 0.0
-            },
-            "body": {
-              "rotation": 0.0
-            },
-            "left_arm": {
-              "rotation": 0.1
-            },
-            "right_arm": {
-              "rotation": -0.15
-            }
-          }
-        }
-      ]
-    },
-    "excited": {
-      "duration": 0.8,
-      "loop": true,
-      "keyframes": [
-        {
-          "time": 0.0,
-          "transforms": {
-            "root": {
-              "position": {
-                "x": 0,
-                "y": 0
-              }
-            },
-            "head": {
-              "rotation": 0.0
-            },
-            "left_arm": {
-              "rotation": -0.5
-            },
-            "right_arm": {
-              "rotation": 0.5
-            }
-          }
-        },
-        {
-          "time": 0.2,
-          "transforms": {
-            "root": {
-              "position": {
-                "x": 0,
-                "y": -15
-              }
-            },
-            "head": {
-              "rotation": 0.1
-            },
-            "left_arm": {
-              "rotation": -0.8
-            },
-            "right_arm": {
-              "rotation": 0.8
-            }
-          }
-        },
-        {
-          "time": 0.4,
-          "transforms": {
-            "root": {
-              "position": {
-                "x": 0,
-                "y": 0
-              }
-            },
-            "head": {
-              "rotation": -0.1
-            },
-            "left_arm": {
-              "rotation": -0.5
-            },
-            "right_arm": {
-              "rotation": 0.5
-            }
-          }
-        },
-        {
-          "time": 0.6,
-          "transforms": {
-            "root": {
-              "position": {
-                "x": 0,
-                "y": -10
-              }
-            },
-            "head": {
-              "rotation": 0.05
-            },
-            "left_arm": {
-              "rotation": -0.7
-            },
-            "right_arm": {
-              "rotation": 0.7
-            }
-          }
-        },
-        {
-          "time": 0.8,
-          "transforms": {
-            "root": {
-              "position": {
-                "x": 0,
-                "y": 0
-              }
-            },
-            "head": {
-              "rotation": 0.0
-            },
-            "left_arm": {
-              "rotation": -0.5
-            },
-            "right_arm": {
-              "rotation": 0.5
-            }
-=======
             "head": { "rotation": 0.0 },
             "jaw": { "rotation": 0.0 },
             "chest": { "rotation": 0.0 },
             "left_arm": { "rotation": 0.1 },
             "right_arm": { "rotation": -0.15 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
-          }
-        }
-      ]
-    },
-    "blink": {
-      "duration": 0.2,
-      "loop": false,
-      "keyframes": [
-        {
-          "time": 0.0,
-<<<<<<< HEAD
-          "transforms": {
-            "head": {
-              "rotation": 0.0
-            }
-          }
-        },
-        {
-          "time": 0.1,
-          "transforms": {
-            "head": {
-              "rotation": -0.01
-            }
-=======
-          "transforms": {}
-        },
-        {
-          "time": 0.1,
-          "transforms": {}
-        },
-        {
-          "time": 0.2,
-          "transforms": {}
-        }
-      ]
-    },
-    "excited": {
-      "duration": 0.8,
-      "loop": true,
-      "keyframes": [
-        {
-          "time": 0.0,
-          "transforms": {
-            "root": { "position": { "x": 0, "y": 0 } },
-            "head": { "rotation": 0.0 },
-            "left_arm": { "rotation": -0.5 },
-            "right_arm": { "rotation": 0.5 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
-          }
-        },
-        {
-          "time": 0.2,
-          "transforms": {
-<<<<<<< HEAD
-            "head": {
-              "rotation": 0.0
-            }
-=======
-            "root": { "position": { "x": 0, "y": -15 } },
-            "head": { "rotation": 0.1 },
-            "left_arm": { "rotation": -0.8 },
-            "right_arm": { "rotation": 0.8 }
-          }
-        },
-        {
-          "time": 0.4,
-          "transforms": {
-            "root": { "position": { "x": 0, "y": 0 } },
-            "head": { "rotation": -0.1 },
-            "left_arm": { "rotation": -0.5 },
-            "right_arm": { "rotation": 0.5 }
-          }
-        },
-        {
-          "time": 0.6,
-          "transforms": {
-            "root": { "position": { "x": 0, "y": -10 } },
-            "head": { "rotation": 0.05 },
-            "left_arm": { "rotation": -0.7 },
-            "right_arm": { "rotation": 0.7 }
-          }
-        },
-        {
-          "time": 0.8,
-          "transforms": {
-            "root": { "position": { "x": 0, "y": 0 } },
-            "head": { "rotation": 0.0 },
-            "left_arm": { "rotation": -0.5 },
-            "right_arm": { "rotation": 0.5 }
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
           }
         }
       ]
     }
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 4bf1e273a0b3d10ab83264b6e20e5449cea26cfc
