@@ -8,6 +8,10 @@ import 'rive_path_effect.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // >>> WFL Weekly Festival Lowdown Viewer v1.0 - Ara Listening
+  print('>>> WFL Weekly Festival Lowdown Viewer v1.0 - Ara Listening');
+  print('>>> Terry wink signature: 3x left eye @ 2:31 Saturday');
+
   // Initialize Firebase for AI Toolkit
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

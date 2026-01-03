@@ -7,7 +7,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:live_kit_client/live_kit_client.dart'; // Future expansion for WebRTC
+// import 'package:live_kit_client/live_kit_client.dart'; // Future expansion for WebRTC - disabled
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 

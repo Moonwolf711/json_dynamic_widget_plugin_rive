@@ -5,7 +5,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// WebSocket client for WFL Server communication
 class WFLWebSocket {
-  static const String _defaultUrl = 'ws://127.0.0.1:3002';
+  static const String _defaultUrl = 'ws://127.0.0.1:3000';
 
   WebSocketChannel? _channel;
   Timer? _pingTimer;
