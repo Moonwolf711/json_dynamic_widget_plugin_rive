@@ -17,7 +17,7 @@ class TerryLiveViewer extends StatefulWidget {
     super.key,
     this.host = 'localhost',
     this.port = 3001,
-    this.assetPath = 'assets/terry',
+    this.assetPath = 'assets/characters/terry',
   });
 
   @override
@@ -450,16 +450,21 @@ class _TerryLiveViewerState extends State<TerryLiveViewer>
                                   ),
                                 ),
 
-                              // Mouth
+                              // Mouth — HARDCODED FOR DEBUG
                               Positioned(
                                 bottom: 45,
                                 child: Image.asset(
-                                  '${widget.assetPath}/mouth_shapes/$mouthFile.png',
-                                  width: 85,
-                                  height: 55,
+                                  'assets/characters/terry/mouth_shapes/x.png',
+                                  width: 100,
+                                  height: 70,
                                   fit: BoxFit.contain,
                                   gaplessPlayback: true,
-                                  errorBuilder: (_, __, ___) => _placeholder(85, 55, mouthFile),
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.red,
+                                    width: 100,
+                                    height: 70,
+                                    child: const Center(child: Text('PATH DEAD', style: TextStyle(color: Colors.white, fontSize: 10))),
+                                  ),
                                 ),
                               ),
 
