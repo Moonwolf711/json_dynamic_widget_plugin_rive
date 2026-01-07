@@ -21,14 +21,19 @@ class Keyframe {
       );
 }
 
+/// Loop mode for animation playback
+enum LoopMode { once, loop, pingPong }
+
 /// Animation timeline widget - handles 20+ minute timelines efficiently
 class AnimationTimeline extends StatefulWidget {
   final Duration duration;
   final List<Bone> bones;
   final void Function(double time)? onScrub;
   final void Function(List<Keyframe> keyframes)? onKeyframesChanged;
+  final void Function(bool isPlaying)? onPlayStateChanged;
   final double pixelsPerSecond;
   final double fps;
+  final List<Keyframe>? initialKeyframes;
 
   const AnimationTimeline({
     super.key,
@@ -36,44 +41,169 @@ class AnimationTimeline extends StatefulWidget {
     required this.bones,
     this.onScrub,
     this.onKeyframesChanged,
+    this.onPlayStateChanged,
     this.pixelsPerSecond = 100,
     this.fps = 24,
+    this.initialKeyframes,
   });
 
   @override
-  State<AnimationTimeline> createState() => _AnimationTimelineState();
+  State<AnimationTimeline> createState() => AnimationTimelineState();
 }
 
-class _AnimationTimelineState extends State<AnimationTimeline>
-    with SingleTickerProviderStateMixin {
-  final List<Keyframe> _keyframes = [];
+class AnimationTimelineState extends State<AnimationTimeline>
+    with TickerProviderStateMixin {
+  late List<Keyframe> _keyframes;
   double _scrubPosition = 0.0; // in seconds
   bool _isPlaying = false;
-  late AnimationController _playbackController;
+  double _playbackSpeed = 1.0;
+  LoopMode _loopMode = LoopMode.once;
+  bool _pingPongReverse = false;
+
+  late AnimationController _controller;
   final ScrollController _scrollController = ScrollController();
+
+  // Public getters
+  double get currentTime => _scrubPosition;
+  bool get isPlaying => _isPlaying;
+  List<Keyframe> get keyframes => List.unmodifiable(_keyframes);
 
   @override
   void initState() {
     super.initState();
-    _playbackController = AnimationController(
+    _keyframes = widget.initialKeyframes?.toList() ?? [];
+
+    _controller = AnimationController(
       vsync: this,
       duration: widget.duration,
-    )..addListener(_onPlaybackTick);
+    )
+      ..addListener(_onTick)
+      ..addStatusListener(_onStatusChanged);
   }
 
   @override
   void dispose() {
-    _playbackController.dispose();
+    _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onPlaybackTick() {
-    if (_isPlaying) {
-      final newTime = _playbackController.value * widget.duration.inSeconds;
-      _updatePreview(newTime);
+  void _onTick() {
+    final newTime = _controller.value * widget.duration.inSeconds;
+    _updatePreview(newTime);
+  }
+
+  void _onStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      switch (_loopMode) {
+        case LoopMode.once:
+          pause();
+          break;
+        case LoopMode.loop:
+          _controller.forward(from: 0);
+          break;
+        case LoopMode.pingPong:
+          _pingPongReverse = !_pingPongReverse;
+          if (_pingPongReverse) {
+            _controller.reverse(from: 1);
+          } else {
+            _controller.forward(from: 0);
+          }
+          break;
+      }
+    } else if (status == AnimationStatus.dismissed && _loopMode == LoopMode.pingPong) {
+      _pingPongReverse = !_pingPongReverse;
+      _controller.forward(from: 0);
     }
   }
+
+  // ==================== PUBLIC API ====================
+
+  /// Start or resume playback
+  void play() {
+    if (_isPlaying) return;
+    setState(() => _isPlaying = true);
+    _controller.duration = Duration(
+      milliseconds: (widget.duration.inMilliseconds / _playbackSpeed).round(),
+    );
+    _controller.forward(from: _scrubPosition / widget.duration.inSeconds);
+    widget.onPlayStateChanged?.call(true);
+  }
+
+  /// Pause playback
+  void pause() {
+    if (!_isPlaying) return;
+    setState(() => _isPlaying = false);
+    _controller.stop();
+    widget.onPlayStateChanged?.call(false);
+  }
+
+  /// Stop and reset to beginning
+  void stop() {
+    setState(() => _isPlaying = false);
+    _controller.stop();
+    _controller.reset();
+    _pingPongReverse = false;
+    _updatePreview(0);
+    widget.onPlayStateChanged?.call(false);
+  }
+
+  /// Seek to specific time in seconds
+  void seekTo(double seconds) {
+    final clampedTime = seconds.clamp(0.0, widget.duration.inSeconds.toDouble());
+    _controller.value = clampedTime / widget.duration.inSeconds;
+    _updatePreview(clampedTime);
+  }
+
+  /// Step forward by one frame
+  void stepForward() {
+    final frameDuration = 1.0 / widget.fps;
+    seekTo(_scrubPosition + frameDuration);
+  }
+
+  /// Step backward by one frame
+  void stepBackward() {
+    final frameDuration = 1.0 / widget.fps;
+    seekTo(_scrubPosition - frameDuration);
+  }
+
+  /// Set playback speed (0.25 to 4.0)
+  void setSpeed(double speed) {
+    setState(() {
+      _playbackSpeed = speed.clamp(0.25, 4.0);
+    });
+    if (_isPlaying) {
+      final currentPos = _scrubPosition / widget.duration.inSeconds;
+      _controller.duration = Duration(
+        milliseconds: (widget.duration.inMilliseconds / _playbackSpeed).round(),
+      );
+      _controller.forward(from: currentPos);
+    }
+  }
+
+  /// Set loop mode
+  void setLoopMode(LoopMode mode) {
+    setState(() {
+      _loopMode = mode;
+      _pingPongReverse = false;
+    });
+  }
+
+  /// Add keyframe at current position
+  void addKeyframe() => _addKeyframeAt(_scrubPosition);
+
+  /// Remove keyframe near current position
+  void removeKeyframe() => _removeKeyframeAt(_scrubPosition);
+
+  /// Load keyframes from list
+  void loadKeyframes(List<Keyframe> keyframes) {
+    setState(() {
+      _keyframes = keyframes.toList();
+      _keyframes.sort((a, b) => a.time.compareTo(b.time));
+    });
+  }
+
+  // ==================== INTERNAL ====================
 
   void _addKeyframeAt(double t) {
     final Map<String, Map<String, dynamic>> frame = {};
@@ -83,7 +213,6 @@ class _AnimationTimelineState extends State<AnimationTimeline>
     }
 
     setState(() {
-      // Remove existing keyframe at same time (within tolerance)
       _keyframes.removeWhere((k) => (k.time - t).abs() < 0.001);
       _keyframes.add(Keyframe(t, frame));
       _keyframes.sort((a, b) => a.time.compareTo(b.time));
@@ -110,7 +239,6 @@ class _AnimationTimelineState extends State<AnimationTimeline>
   void _applyKeyframes(double t) {
     if (_keyframes.isEmpty) return;
 
-    // Find surrounding keyframes for interpolation
     Keyframe? prev;
     Keyframe? next;
 
@@ -123,7 +251,6 @@ class _AnimationTimelineState extends State<AnimationTimeline>
       }
     }
 
-    // Apply interpolated transforms to bones
     for (final bone in widget.bones) {
       Transform? startTransform;
       Transform? endTransform;
@@ -153,26 +280,6 @@ class _AnimationTimelineState extends State<AnimationTimeline>
     }
   }
 
-  void _togglePlayback() {
-    setState(() {
-      _isPlaying = !_isPlaying;
-      if (_isPlaying) {
-        _playbackController.forward(from: _scrubPosition / widget.duration.inSeconds);
-      } else {
-        _playbackController.stop();
-      }
-    });
-  }
-
-  void _stopPlayback() {
-    setState(() {
-      _isPlaying = false;
-      _playbackController.stop();
-      _playbackController.reset();
-      _updatePreview(0);
-    });
-  }
-
   String _formatTime(double seconds) {
     final mins = (seconds / 60).floor();
     final secs = (seconds % 60).floor();
@@ -183,41 +290,62 @@ class _AnimationTimelineState extends State<AnimationTimeline>
   @override
   Widget build(BuildContext context) {
     final totalPixels = widget.duration.inSeconds * widget.pixelsPerSecond;
+    final maxSeconds = widget.duration.inSeconds.toDouble();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Transport controls
+        // Transport controls row 1
         _buildTransportControls(),
-        const SizedBox(height: 8),
-        // Timeline
+        const SizedBox(height: 4),
+        // Scrub slider
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Text(_formatTime(0), style: const TextStyle(fontSize: 10)),
+              Expanded(
+                child: Slider(
+                  value: _scrubPosition,
+                  min: 0,
+                  max: maxSeconds,
+                  onChanged: (v) => seekTo(v),
+                  onChangeStart: (_) {
+                    if (_isPlaying) pause();
+                  },
+                ),
+              ),
+              Text(_formatTime(maxSeconds), style: const TextStyle(fontSize: 10)),
+            ],
+          ),
+        ),
+        // Timeline canvas
         SizedBox(
-          height: 100,
+          height: 80,
           child: GestureDetector(
             onHorizontalDragUpdate: (details) {
-              final newTime = _scrubPosition +
-                  (details.delta.dx / widget.pixelsPerSecond);
-              _updatePreview(newTime);
+              if (_isPlaying) pause();
+              final newTime = _scrubPosition + (details.delta.dx / widget.pixelsPerSecond);
+              seekTo(newTime);
             },
             onTapDown: (details) {
+              if (_isPlaying) pause();
               final scrollOffset = _scrollController.offset;
               final tapX = details.localPosition.dx + scrollOffset;
               final newTime = tapX / widget.pixelsPerSecond;
-              _updatePreview(newTime);
+              seekTo(newTime);
             },
-            onDoubleTapDown: (details) {
-              _addKeyframeAt(_scrubPosition);
-            },
+            onDoubleTap: () => _addKeyframeAt(_scrubPosition),
             child: SingleChildScrollView(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
               child: SizedBox(
                 width: totalPixels,
-                height: 100,
+                height: 80,
                 child: CustomPaint(
                   painter: _TimelinePainter(
                     pixelsPerSecond: widget.pixelsPerSecond,
-                    totalSeconds: widget.duration.inSeconds.toDouble(),
+                    totalSeconds: maxSeconds,
                     scrubPosition: _scrubPosition,
                     keyframes: _keyframes,
                   ),
@@ -234,19 +362,32 @@ class _AnimationTimelineState extends State<AnimationTimeline>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Stop button
+        // Step back
+        IconButton(
+          icon: const Icon(Icons.skip_previous, size: 20),
+          tooltip: 'Previous frame',
+          onPressed: stepBackward,
+        ),
+        // Stop
         IconButton(
           icon: const Icon(Icons.stop),
-          onPressed: _stopPlayback,
+          onPressed: stop,
         ),
-        // Play/Pause button
+        // Play/Pause
         IconButton(
-          icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-          onPressed: _togglePlayback,
+          icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, size: 28),
+          onPressed: _isPlaying ? pause : play,
         ),
-        // Time display
+        // Step forward
+        IconButton(
+          icon: const Icon(Icons.skip_next, size: 20),
+          tooltip: 'Next frame',
+          onPressed: stepForward,
+        ),
+        const SizedBox(width: 8),
+        // Timecode
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.black87,
             borderRadius: BorderRadius.circular(4),
@@ -256,22 +397,55 @@ class _AnimationTimelineState extends State<AnimationTimeline>
             style: const TextStyle(
               color: Colors.white,
               fontFamily: 'monospace',
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
         ),
-        const SizedBox(width: 16),
-        // Add keyframe button
-        IconButton(
-          icon: const Icon(Icons.add_circle_outline),
-          tooltip: 'Add keyframe (or double-tap timeline)',
-          onPressed: () => _addKeyframeAt(_scrubPosition),
+        const SizedBox(width: 12),
+        // Speed dropdown
+        DropdownButton<double>(
+          value: _playbackSpeed,
+          isDense: true,
+          underline: const SizedBox(),
+          items: const [
+            DropdownMenuItem(value: 0.25, child: Text('0.25x')),
+            DropdownMenuItem(value: 0.5, child: Text('0.5x')),
+            DropdownMenuItem(value: 1.0, child: Text('1x')),
+            DropdownMenuItem(value: 2.0, child: Text('2x')),
+            DropdownMenuItem(value: 4.0, child: Text('4x')),
+          ],
+          onChanged: (v) => setSpeed(v ?? 1.0),
         ),
-        // Remove keyframe button
+        const SizedBox(width: 8),
+        // Loop mode
+        PopupMenuButton<LoopMode>(
+          icon: Icon(
+            _loopMode == LoopMode.once
+                ? Icons.arrow_right_alt
+                : _loopMode == LoopMode.loop
+                    ? Icons.repeat
+                    : Icons.swap_horiz,
+            size: 20,
+          ),
+          tooltip: 'Loop mode',
+          onSelected: setLoopMode,
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: LoopMode.once, child: Text('Play once')),
+            const PopupMenuItem(value: LoopMode.loop, child: Text('Loop')),
+            const PopupMenuItem(value: LoopMode.pingPong, child: Text('Ping-pong')),
+          ],
+        ),
+        const SizedBox(width: 8),
+        // Keyframe buttons
         IconButton(
-          icon: const Icon(Icons.remove_circle_outline),
-          tooltip: 'Remove keyframe at current position',
-          onPressed: () => _removeKeyframeAt(_scrubPosition),
+          icon: const Icon(Icons.add_circle_outline, size: 20),
+          tooltip: 'Add keyframe',
+          onPressed: addKeyframe,
+        ),
+        IconButton(
+          icon: const Icon(Icons.remove_circle_outline, size: 20),
+          tooltip: 'Remove keyframe',
+          onPressed: removeKeyframe,
         ),
       ],
     );
@@ -296,7 +470,6 @@ class _TimelinePainter extends CustomPainter {
     final bgPaint = Paint()..color = const Color(0xFF2D2D2D);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
-    // Draw second markers
     final tickPaint = Paint()
       ..color = Colors.grey.shade600
       ..strokeWidth = 1;
@@ -305,9 +478,7 @@ class _TimelinePainter extends CustomPainter {
       ..color = Colors.grey.shade400
       ..strokeWidth = 2;
 
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     for (double t = 0; t <= totalSeconds; t += 1) {
       final x = t * pixelsPerSecond;
@@ -315,58 +486,54 @@ class _TimelinePainter extends CustomPainter {
 
       canvas.drawLine(
         Offset(x, 0),
-        Offset(x, isMajor ? 20 : 10),
+        Offset(x, isMajor ? 16 : 8),
         isMajor ? majorTickPaint : tickPaint,
       );
 
-      // Draw time label every 10 seconds
       if (isMajor) {
         final mins = (t / 60).floor();
         final secs = (t % 60).floor();
         textPainter.text = TextSpan(
           text: '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}',
-          style: TextStyle(color: Colors.grey.shade400, fontSize: 10),
+          style: TextStyle(color: Colors.grey.shade400, fontSize: 9),
         );
         textPainter.layout();
-        textPainter.paint(canvas, Offset(x + 4, 4));
+        textPainter.paint(canvas, Offset(x + 2, 2));
       }
     }
 
-    // Draw keyframe markers
+    // Keyframes
     final keyframePaint = Paint()..color = Colors.amber;
     for (final keyframe in keyframes) {
       final x = keyframe.time * pixelsPerSecond;
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset(x, size.height / 2), width: 8, height: 40),
+          Rect.fromCenter(center: Offset(x, size.height / 2 + 8), width: 6, height: 30),
           const Radius.circular(2),
         ),
         keyframePaint,
       );
     }
 
-    // Draw playhead
-    final playheadPaint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 2;
+    // Playhead
     final playheadX = scrubPosition * pixelsPerSecond;
     canvas.drawLine(
       Offset(playheadX, 0),
       Offset(playheadX, size.height),
-      playheadPaint,
+      Paint()
+        ..color = Colors.red
+        ..strokeWidth = 2,
     );
 
-    // Draw playhead handle
     final handlePath = Path()
-      ..moveTo(playheadX - 6, 0)
-      ..lineTo(playheadX + 6, 0)
-      ..lineTo(playheadX, 10)
+      ..moveTo(playheadX - 5, 0)
+      ..lineTo(playheadX + 5, 0)
+      ..lineTo(playheadX, 8)
       ..close();
     canvas.drawPath(handlePath, Paint()..color = Colors.red);
   }
 
   @override
   bool shouldRepaint(_TimelinePainter old) =>
-      scrubPosition != old.scrubPosition ||
-      keyframes.length != old.keyframes.length;
+      scrubPosition != old.scrubPosition || keyframes.length != old.keyframes.length;
 }
