@@ -122,4 +122,57 @@ class Transform {
     transform.rotation = Quaternion(qx, qy, qz, qw).normalized();
     return transform;
   }
+
+  /// Create transform from serialized map
+  factory Transform.fromMap(Map<String, dynamic> map) {
+    final t = Transform();
+    if (map['position'] != null) {
+      t.position = Vec3.fromMap(map['position'] as Map<String, dynamic>);
+    }
+    if (map['rotation'] != null) {
+      final r = map['rotation'] as Map<String, dynamic>;
+      t.rotation = Quaternion(
+        r['x'] as double,
+        r['y'] as double,
+        r['z'] as double,
+        r['w'] as double,
+      );
+    }
+    if (map['scale'] != null) {
+      t.scale = Vec3.fromMap(map['scale'] as Map<String, dynamic>);
+    }
+    return t;
+  }
+
+  /// Serialize transform to map
+  Map<String, dynamic> toMap() => {
+        'position': position.toMap(),
+        'rotation': {'x': rotation.x, 'y': rotation.y, 'z': rotation.z, 'w': rotation.w},
+        'scale': scale.toMap(),
+      };
+
+  /// Linear interpolation between transforms
+  Transform lerp(Transform other, double t) {
+    final result = Transform();
+    result.position = position.lerp(other.position, t);
+    result.rotation = Quaternion.slerp(rotation, other.rotation, t);
+    result.scale = scale.lerp(other.scale, t);
+    return result;
+  }
+
+  /// Copy this transform
+  Transform clone() {
+    final t = Transform();
+    t.position = position.clone();
+    t.rotation = Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
+    t.scale = scale.clone();
+    return t;
+  }
+
+  /// Copy values from another transform
+  void setFrom(Transform other) {
+    position.setFrom(other.position);
+    rotation = Quaternion(other.rotation.x, other.rotation.y, other.rotation.z, other.rotation.w);
+    scale.setFrom(other.scale);
+  }
 }
