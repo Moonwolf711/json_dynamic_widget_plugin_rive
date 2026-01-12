@@ -1,0 +1,16 @@
+# Terry Front View Layers
+# Place the following PNG files here:
+#
+# head.png              - Head with bandana, sunglasses, dreads
+# necklace.png          - Gold rope chain
+# right_arm_upper.png   - Right bicep and sleeve
+# right_arm_lower.png   - Right forearm and hand
+# left_arm_upper.png    - Left bicep and sleeve
+# left_arm_lower.png    - Left forearm and hand
+# torso.png             - Shirt with pattern
+# right_leg_upper.png   - Right thigh with pants
+# right_leg_lower.png   - Right shin and boot
+# left_leg_upper.png    - Left thigh with pants
+# left_leg_lower.png    - Left shin and boot
+#
+# See docs/TERRY_LAYER_SPECIFICATION.md for full details
